@@ -214,7 +214,8 @@ Solución: Pasar la propiedad -Dnet.bytebuddy.experimental=true al ejecutar los 
 Herramienta,Uso en el Proyecto
 Gemini / ChatGPT,"Apoyo en la estructuración de plantillas Markdown, generación del flujo en GitHub Actions y resolución de errores de entorno."
 
-Reflexiones Individuales
+##Reflexiones Individuales
+
 Reflexión — Valentina Cortez
 
 Reflexión — Joaquín Orellana
