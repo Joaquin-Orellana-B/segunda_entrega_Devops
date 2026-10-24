@@ -142,7 +142,6 @@ Para autorizar la aprobación y fusión (*merge*) de un Pull Request, se conside
                 Aprobación 
                     ↓ 
                 Merge a main
-               
                 ```
 
 
