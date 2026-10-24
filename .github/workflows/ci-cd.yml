@@ -1,0 +1,55 @@
+name: CI/CD Pipeline - Order Manager
+
+on:
+  push:
+    branches: [ "main", "master", "develop/JO" ]
+  pull_request:
+    branches: [ "main", "master", "develop/JO" ]
+
+jobs:
+  test-and-build:
+    name: Build & Run Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compilar y Ejecutar Pruebas Automatizadas
+        run: mvn clean verify -B
+
+      - name: Guardar Reporte de Pruebas (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+
+  docker-integration:
+    name: Test Docker Compose Deployment
+    runs-on: ubuntu-latest
+    needs: test-and-build
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Construir y Levantar Contenedores
+        run: docker compose up -d --build
+
+      - name: Verificar Salud del Servicio (Actuator Healthcheck)
+        run: |
+          echo "Esperando a que la aplicación esté completamente lista..."
+          sleep 15
+          curl -f http://localhost:8098/actuator/health || exit 1
+
+      - name: Detener y Limpiar Contenedores
+        if: always()
+        run: docker compose down -v
