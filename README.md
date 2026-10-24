@@ -50,8 +50,9 @@ El proyecto aborda la automatización completa del ciclo de vida de software: de
 
 ```text
 [ Cliente / Postman ] ──> [ Spring Boot API (Port 8098) ] ──> [ PostgreSQL (Port 5432) ]
-                                    │
-                         [ Actuator Health Check ]
+                                     │
+                          [ Actuator Health Check ]
+```
 
 
 ## Estructura del proyecto
