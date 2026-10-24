@@ -125,24 +125,24 @@ Para autorizar la aprobación y fusión (*merge*) de un Pull Request, se conside
 #### Flujo del Proceso
 
 ```text
-            Crear/Actualizar Rama
-                     ↓ 
-            Realizar Cambios 
-                    ↓ 
-                Commit 
-                    ↓ 
-            Push a GitHub 
-                    ↓ 
-            Crear Pull Request 
-                    ↓
-        Revisión e Integración CI/CD 
-                    ↓
-        Correcciones (si aplica) 
-                    ↓
-                Aprobación 
-                    ↓ 
-                Merge a main
-                ```
+Crear/Actualizar Rama
+          ↓
+   Realizar Cambios
+          ↓
+        Commit
+          ↓
+    Push a GitHub
+          ↓
+  Crear Pull Request
+          ↓
+Revisión e Integración CI/CD
+          ↓
+ Correcciones (si aplica)
+          ↓
+      Aprobación
+          ↓
+    Merge a main
+```
 
 
 ##  Guía de Ejecución
