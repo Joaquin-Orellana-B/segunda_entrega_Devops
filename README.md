@@ -57,20 +57,23 @@ El proyecto aborda la automatización completa del ciclo de vida de software: de
 
 ## Estructura del proyecto
 
+
+```text
 segunda_entrega_Devops/
 ├── .github/
-│   ├── workflows/ci-cd.yml    # Pipeline de Integración Continua
-│   └── dependabot.yml         # Escaneo semanal de dependencias
-├── docs/fases/                 # Bitácora detallada de las 10 fases
+│   ├── workflows/ci-cd.yml         # Pipeline de Integración Continua
+│   └── dependabot.yml              # Escaneo semanal de dependencias
+├── docs/fases/                     # Bitácora detallada de las 10 fases
 ├── src/
 │   ├── main/java/com/example/ordermanager/
 │   └── main/resources/
 │       ├── application.properties         # Configuración Local (H2)
 │       └── application-docker.properties  # Configuración Docker (PostgreSQL)
-├── Dockerfile                  # Empaquetado Multi-stage
-├── docker-compose.yml          # Orquestación App + DB
-├── .dockerignore               # Exclusión de archivos pesados
-└── pom.xml                     # Gestión de dependencias y plugins
+├── Dockerfile                      # Empaquetado Multi-stage
+├── docker-compose.yml              # Orquestación App + DB
+├── .dockerignore                   # Exclusión de archivos pesados
+└── pom.xml                         # Gestión de dependencias y plugins
+```
 
 ### Estrategia de Ramificación (Git Branching)
 
@@ -115,14 +118,32 @@ Los cambios realizados por los integrantes del equipo son revisados mediante **P
 Para autorizar la aprobación y fusión (*merge*) de un Pull Request, se consideran los siguientes puntos:
 
 * **Funcionalidad**: El código cumple con los requerimientos solicitados para la fase correspondiente.
-* **Compilación y Pruebas**: La aplicación ejecuta correctamente en entorno local y supera la validación automatizada en el pipeline de CI/CD (GitHub Actions)[cite: 2, 3].
-* **Coherencia**: Los cambios mantienen la arquitectura y estructura del proyecto[cite: 1].
-* **Convención de Commits**: Los mensajes de commit respetan la estructura de *Conventional Commits*[cite: 1].
+* **Compilación y Pruebas**: La aplicación ejecuta correctamente en entorno local y supera la validación automatizada en el pipeline de CI/CD (GitHub Actions).
+* **Coherencia**: Los cambios mantienen la arquitectura y estructura del proyecto.
+* **Convención de Commits**: Los mensajes de commit respetan la estructura de *Conventional Commits*.
 
 #### Flujo del Proceso
 
 ```text
-Crear/Actualizar Rama ↓ Realizar Cambios ↓ Commit ↓ Push a GitHub ↓ Crear Pull Request ↓ Revisión e Integración CI/CD ↓ Correcciones (si aplica) ↓ Aprobación ↓ Merge a main
+            Crear/Actualizar Rama
+                     ↓ 
+            Realizar Cambios 
+                    ↓ 
+                Commit 
+                    ↓ 
+            Push a GitHub 
+                    ↓ 
+            Crear Pull Request 
+                    ↓
+        Revisión e Integración CI/CD 
+                    ↓
+        Correcciones (si aplica) 
+                    ↓
+                Aprobación 
+                    ↓ 
+                Merge a main
+               
+                ```
 
 
 ##  Guía de Ejecución
