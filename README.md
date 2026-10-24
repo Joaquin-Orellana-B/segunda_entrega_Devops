@@ -149,16 +149,16 @@ Revisión e Integración CI/CD
 
 ### Ejecución con Docker Compose (App + PostgreSQL)
 
-# Levantar la infraestructura completa en segundo plano
+#### Levantar la infraestructura completa en segundo plano
 docker compose up -d --build
 
-# Verificar estado de salud de los contenedores
+#### Verificar estado de salud de los contenedores
 docker compose ps
 
-# Ver logs en tiempo real
+#### Ver logs en tiempo real
 docker compose logs -f app
 
-# Detener y limpiar contenedores y volúmenes
+#### Detener y limpiar contenedores y volúmenes
 docker compose down -v
 
 ## Pruebas Automatizadas y Cobertura
