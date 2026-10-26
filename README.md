@@ -14,16 +14,6 @@ Microservicio RESTful para la gestión del ciclo de vida de pedidos, desarrollad
 
 El proyecto aborda la automatización completa del ciclo de vida de software: desde el desarrollo local hasta la construcción de imágenes, orquestación de contenedores y despliegue continuo mediante **GitHub Actions**.
 
-### Matriz de Cumplimiento de la Rúbrica (IE1 - IE5)
-
-| Indicador | Descripción Rúbrica | Implementación en el Proyecto | Ubicación |
-| :--- | :--- | :--- | :--- |
-| **IE1 / IL2.1** | Contenerización de la aplicación | `Dockerfile` Multi-stage build con usuario no-root (`spring`) e imagen ligera `alpine`. | `Dockerfile`, `.dockerignore` |
-| **IE2 / IL2.2** | Pruebas automatizadas en el pipeline | 28 pruebas automatizadas (15 de servicio + 13 de controlador) integradas en CI/CD. | `src/test/`, `.github/workflows/ci-cd.yml` |
-| **IE3 / IL2.3** | Parámetros de escalabilidad y seguridad | Control de vulnerabilidades con Dependabot y análisis estático con SonarQube/JaCoCo. | `.github/dependabot.yml`, `pom.xml` |
-| **IE4 / IL2.4** | Despliegue automático y trazabilidad | Pipeline en GitHub Actions que compila, prueba, construye y valida la salud en cada `push`. | `.github/workflows/ci-cd.yml` |
-| **IE5 / IL2.5** | Orquestación de contenedores | Docker Compose con PostgreSQL, healthchecks (`pg_isready`), volumen persistente y red aislada. | `docker-compose.yml` |
-
 ---
 
 ## 🛠️ Stack Tecnológico y Arquitectura
@@ -65,22 +55,25 @@ segunda_entrega_Devops/
 
 El proyecto utiliza una estrategia de desarrollo basada en ramas para garantizar la estabilidad del código:
 
-* **`main`**: Rama de producción. Contiene el código estable y listo para despliegue. Cada *push* o *merge* activa la ejecución completa del pipeline CI/CD (pruebas, análisis de seguridad, empaquetado e integración)[cite: 3].
-* **`develop/JO`**: Rama de integración y desarrollo activo. Permite validar los cambios mediante ejecuciones automatizadas de pruebas en GitHub Actions antes de fusionar a la rama principal.
+* **`main`**: Rama de producción. Contiene el código estable y listo para despliegue. Cada *push* o *merge* activa la ejecución completa del pipeline CI/CD (pruebas, análisis de seguridad, empaquetado e integración).
+* **`Developer/Iniciales`**: Ramas de integración y desarrollo activo. Permite validar los cambios mediante ejecuciones automatizadas de pruebas en GitHub Actions antes de fusionar a la rama principal.
 
 ### Convenciones de Naming de Ramas
 
-A diferencia de *Trunk-Based Development* (que utiliza ramas efímeras de corta duración), para este proyecto se optó por una estrategia adaptada de **Git Flow**, basada en **ramas de desarrollo de larga duración por integrante**. 
+A diferencia de *Trunk-Based Development*, para este proyecto se optó por una estrategia adaptada de **Git Flow**, basada en **ramas de desarrollo de larga duración por integrante**. 
 
 Bajo este esquema, la rama `main` se mantiene como el tronco principal y estable de producción, mientras que cada desarrollador dispone de su propia rama permanente para avanzar en la construcción y prueba de las distintas fases antes de consolidar el código mediante *Pull Requests*.
 
 #### Estructura y Convención de Nombres
 Las ramas individuales siguen la convención de nomenclatura `Developer/inicial_nombre_inicial_apellido`:
 
-* **`main`**: Rama principal de producción. Contiene el código estable, verificado y listo para despliegue o entrega final[cite: 3].
-* **`Developer/J_O`** (o `Developer/JO`): Rama permanente de desarrollo e integración activa de Joaquín Orellana[cite: 2].
-* **`Developer/I_A2`**: Rama permanente de desarrollo e integración del segundo desarrollador.
-* **`Developer/I_A3`**: Rama permanente de desarrollo e integración del tercer desarrollador.
+* **`main`**: Rama principal de producción. Contiene el código estable, verificado y listo para despliegue o entrega final.
+
+* -- Ramas desarrolladores
+
+* **`Developer/JO`
+* **`Developer/BS`.
+* **`Developer/VC`
 
 ### Convenciones de Commits
 
