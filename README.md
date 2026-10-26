@@ -1,157 +1,213 @@
-# Order Manager API
+# 📋 Order Manager API
 
-API REST para gestionar pedidos, desarrollada con Java 25 LTS, Spring Boot 4.0.9 y Maven. Esta entrega cubre pruebas automatizadas, contenedores, orquestación, análisis de calidad y seguridad, y un despliegue simulado en GitHub Actions.
+[![CI/CD Pipeline](https://github.com/Joaquin-Orellana-B/segunda_entrega_Devops/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Joaquin-Orellana-B/segunda_entrega_Devops/actions)
+![Java](https://img.shields.io/badge/Java-17-blue)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.4-brightgreen)
+![Docker](https://img.shields.io/badge/Docker-Multi--stage-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15--Alpine-blue)
 
-> El proyecto adapta las fases 5–10 de la guía DevOps al dominio **Order Manager**. La simulación cloud ejecuta los contenedores en un runner temporal de GitHub Actions; no publica la imagen en un registry ni crea infraestructura cloud persistente.
+Microservicio RESTful para la gestión del ciclo de vida de pedidos, desarrollado como proyecto práctico de la asignatura **Ingeniería DevOps (DOY0101)** en **Duoc UC**.
 
-## Requisitos
+---
 
-- JDK 25. Comprueba `java -version` y configura `JAVA_HOME` para que Maven use ese JDK.
-- Maven 3.9 o posterior.
-- Docker Engine y Docker Compose v2 para contenedores.
-- Para ejecutar el pipeline completo: repositorio en GitHub con Actions habilitado. SonarCloud requiere además un proyecto y las variables/secreto descritos abajo.
+## 🎯 Descripción y Matriz de Indicadores
 
-## Ejecutar localmente
+El proyecto aborda la automatización completa del ciclo de vida de software: desde el desarrollo local hasta la construcción de imágenes, orquestación de contenedores y despliegue continuo mediante **GitHub Actions**.
 
-Desde la raíz del repositorio:
+---
 
-```bash
-mvn spring-boot:run
+## 🛠️ Stack Tecnológico y Arquitectura
+
+- **Lenguaje & Framework**: Java 17, Spring Boot 3.3.4 (Data JPA, Web, Validation, Actuator).
+- **Bases de Datos**: H2 Database (desarrollo local/tests) y PostgreSQL 15 Alpine (producción/contenedores).
+- **Contenerización**: Docker (Multi-stage build).
+- **Orquestación**: Docker Compose (Servicios `db` y `app` con `healthcheck`).
+- **CI/CD**: GitHub Actions y Dependabot.
+
+```text
+[ Cliente / Postman ] ──> [ Spring Boot API (Port 8098) ] ──> [ PostgreSQL (Port 5432) ]
+                                     │
+                          [ Actuator Health Check ]
 ```
 
-La aplicación usa el perfil predeterminado y una base H2 en memoria. La API escucha en <http://localhost:8098>; la consola H2 está en <http://localhost:8098/h2-console>.
 
-Endpoints principales:
+## Estructura del proyecto
 
-| Método | Ruta | Descripción |
-| --- | --- | --- |
-| `GET` | `/api/orders` | Listar pedidos |
-| `GET` | `/api/orders/{id}` | Consultar un pedido |
-| `GET` | `/api/orders/status/{status}` | Filtrar por estado |
-| `POST` | `/api/orders` | Crear un pedido |
-| `POST` | `/api/orders/{id}/items` | Agregar un artículo |
-| `PUT` | `/api/orders/{id}/confirm` | Confirmar un pedido |
-| `PUT` | `/api/orders/{id}/ship` | Marcar como enviado |
-| `PUT` | `/api/orders/{id}/deliver` | Marcar como entregado |
-| `PUT` | `/api/orders/{id}/cancel` | Cancelar un pedido |
-| `DELETE` | `/api/orders/{id}` | Eliminar un pedido |
 
-La API de salud de Actuator es <http://localhost:8098/actuator/health>.
-
-## Fase 5: pruebas automatizadas
-
-Ejecuta la compilación, las pruebas y el reporte de cobertura:
-
-```bash
-mvn --batch-mode clean verify
+```text
+segunda_entrega_Devops/
+├── .github/
+│   ├── workflows/ci-cd.yml         # Pipeline de Integración Continua
+│   └── dependabot.yml              # Escaneo semanal de dependencias
+├── docs/fases/                     # Bitácora detallada de las 10 fases
+├── src/
+│   ├── main/java/com/example/ordermanager/
+│   └── main/resources/
+│       ├── application.properties         # Configuración Local (H2)
+│       └── application-docker.properties  # Configuración Docker (PostgreSQL)
+├── Dockerfile                      # Empaquetado Multi-stage
+├── docker-compose.yml              # Orquestación App + DB
+├── .dockerignore                   # Exclusión de archivos pesados
+└── pom.xml                         # Gestión de dependencias y plugins
 ```
 
-JUnit ejecuta pruebas unitarias del servicio y pruebas web del controlador; JaCoCo genera el reporte en `target/site/jacoco/index.html`. Los resultados de JUnit quedan en `target/surefire-reports/`.
+### Estrategia de Ramificación (Git Branching)
 
-Para comprobar el resultado en PowerShell:
+El proyecto utiliza una estrategia de desarrollo basada en ramas para garantizar la estabilidad del código:
 
-```powershell
-Get-Content .\target\surefire-reports\*.txt | Select-String "Tests run:"
+* **`main`**: Rama de producción. Contiene el código estable y listo para despliegue. Cada *push* o *merge* activa la ejecución completa del pipeline CI/CD (pruebas, análisis de seguridad, empaquetado e integración).
+* **`Developer/Iniciales`**: Ramas de integración y desarrollo activo. Permite validar los cambios mediante ejecuciones automatizadas de pruebas en GitHub Actions antes de fusionar a la rama principal.
+
+### Convenciones de Naming de Ramas
+
+A diferencia de *Trunk-Based Development*, para este proyecto se optó por una estrategia adaptada de **Git Flow**, basada en **ramas de desarrollo de larga duración por integrante**. 
+
+Bajo este esquema, la rama `main` se mantiene como el tronco principal y estable de producción, mientras que cada desarrollador dispone de su propia rama permanente para avanzar en la construcción y prueba de las distintas fases antes de consolidar el código mediante *Pull Requests*.
+
+#### Estructura y Convención de Nombres
+Las ramas individuales siguen la convención de nomenclatura `Developer/inicial_nombre_inicial_apellido`:
+
+* **`main`**: Rama principal de producción. Contiene el código estable, verificado y listo para despliegue o entrega final.
+
+* -- Ramas desarrolladores
+
+* **`Developer/JO`
+* **`Developer/BS`.
+* **`Developer/VC`
+
+### Convenciones de Commits
+
+Adoptamos el estándar de **Conventional Commits** con la siguiente estructura general:
+`<tipo>(<ámbito_opcional>): <descripción corta en presente>`
+
+#### Tipos utilizados
+* **`feat`**: Nueva funcionalidad o requerimiento de negocio (ej. `feat(fase-2): agrega modelo JPA y repositorios de órdenes`).
+* **`fix`**: Corrección de errores o fallos (ej. `fix(fase-4): corrige código de respuesta HTTP en controlador REST`).
+* **`docs`**: Cambios exclusivamente en documentación (ej. `docs: actualiza el README con instrucciones de ejecución y fases`).
+* **`test`**: Adición o modificación de pruebas unitarias o de integración (ej. `test(fase-5): agrega 24 pruebas unitarias e integración`).
+* **`ci` / `build`**: Cambios en archivos de automatización, configuración de Maven o Docker (ej. `ci(fase-9): añade pipeline de GitHub Actions`).
+
+Se decidió utilizar esta convención porque facilita comprender rápidamente qué cambio se realizó en cada commit, permite mantener una trazabilidad clara del historial de Git y respalda el flujo de Integración Continua (CI).
+
+### Estrategia de Revisión (Pull Requests)
+
+Los cambios realizados por los integrantes del equipo son revisados mediante **Pull Requests (PR)** antes de ser integrados a la rama principal `main`.
+
+#### Criterios de Aceptación para Aprobar un PR
+Para autorizar la aprobación y fusión (*merge*) de un Pull Request, se consideran los siguientes puntos:
+
+* **Funcionalidad**: El código cumple con los requerimientos solicitados para la fase correspondiente.
+* **Compilación y Pruebas**: La aplicación ejecuta correctamente en entorno local y supera la validación automatizada en el pipeline de CI/CD (GitHub Actions).
+* **Coherencia**: Los cambios mantienen la arquitectura y estructura del proyecto.
+* **Convención de Commits**: Los mensajes de commit respetan la estructura de *Conventional Commits*.
+
+#### Flujo del Proceso
+
+```text
+Crear/Actualizar Rama
+          ↓
+   Realizar Cambios
+          ↓
+        Commit
+          ↓
+    Push a GitHub
+          ↓
+  Crear Pull Request
+          ↓
+Revisión e Integración CI/CD
+          ↓
+ Correcciones (si aplica)
+          ↓
+      Aprobación
+          ↓
+    Merge a main
 ```
 
-## Fases 6–8: Docker, perfil y Compose
 
-El [Dockerfile](Dockerfile) usa una compilación multi-stage con Maven y Java 25, y ejecuta el JAR en una imagen JRE como usuario no root (`10001`). La imagen define un healthcheck HTTP. El archivo [.dockerignore](.dockerignore) excluye artefactos, archivos de entorno y otros recursos que no deben entrar al contexto de construcción.
+##  Guía de Ejecución
 
-El perfil `docker` configura PostgreSQL y deshabilita la consola H2. Compose levanta la API y PostgreSQL, espera a que la base de datos esté saludable, conserva sus datos en un volumen y aplica límites de memoria, CPU y procesos, healthchecks y `no-new-privileges`.
+### Ejecución con Docker Compose (App + PostgreSQL)
 
-Comprueba la configuración e inicia el entorno:
+#### Levantar la infraestructura completa en segundo plano
+docker compose up -d --build
 
-```bash
-docker compose config --quiet
-docker compose up --build --detach
+#### Verificar estado de salud de los contenedores
 docker compose ps
-```
 
-Comprueba salud y API:
+#### Ver logs en tiempo real
+docker compose logs -f app
 
-```bash
-curl --fail http://localhost:8098/actuator/health
-curl --fail http://localhost:8098/api/orders
-```
+#### Detener y limpiar contenedores y volúmenes
+docker compose down -v
 
-En PowerShell puedes usar:
+## Pruebas Automatizadas y Cobertura
 
-```powershell
-Invoke-RestMethod http://localhost:8098/actuator/health
-Invoke-RestMethod http://localhost:8098/api/orders
-```
+La suite consta de 28 pruebas automatizadas que garantizan la estabilidad del sistema:
 
-Detén los contenedores conservando los datos:
+Pruebas Unitarias (OrderServiceTest): 15 pruebas de lógica de negocio y excepciones usando Mockito.
 
-```bash
-docker compose down
-```
+Pruebas de Integración Web (OrderControllerTest): 13 pruebas de endpoints HTTP y mapeo JSON con MockMvc.
 
-Elimina también el volumen de PostgreSQL:
+Para ejecutar los tests localmente:
 
-```bash
-docker compose down --volumes
-```
+mvn clean test -Dnet.bytebuddy.experimental=true
 
-Compose usa credenciales de demostración (`orders` / `orders-local`) por defecto. Son únicamente para desarrollo local; no se deben usar en producción ni guardar credenciales reales en el repositorio. Para personalizar el entorno, define `POSTGRES_DB`, `POSTGRES_USER` y `POSTGRES_PASSWORD` antes de ejecutar Compose.
+## Pipeline CI/CD y Trazabilidad
 
-Los límites de CPU y memoria son controles de recursos, **no escalado automático**. Esta configuración no implementa réplicas, autoescalado ni alta disponibilidad.
+El archivo .github/workflows/ci-cd.yml define dos jobs automatizados en GitHub Actions:
 
-## Fase 9: pipeline CI/CD
+test-and-build:
 
-El workflow [ci-cd.yml](.github/workflows/ci-cd.yml) se ejecuta en *push* a `main`/`master`, en pull requests hacia esas ramas y por `workflow_dispatch`. Usa Java 25 y Maven. Sus jobs son:
+Descarga el código y configura JDK 17 Temurin.
 
-1. **Pruebas y empaquetado Maven:** ejecuta `mvn verify`; un fallo de compilación o pruebas bloquea los jobs dependientes.
-2. **SonarCloud y Quality Gate:** analiza el proyecto después de las pruebas y falla si el Quality Gate no se cumple.
-3. **Construcción y seguridad de imagen:** construye la imagen Docker y Trivy analiza vulnerabilidades de severidad alta y crítica; las que tengan corrección disponible bloquean el job.
-4. **Despliegue simulado:** solo en un *push* a `main`/`master` y después de aprobar SonarCloud y Trivy, inicia API y PostgreSQL con Docker Compose, comprueba el endpoint de salud y limpia los contenedores.
+Ejecuta mvn clean verify (compila y corre los 28 tests).
 
-El despliegue **no** se ejecuta en pull requests ni al iniciar manualmente `workflow_dispatch`; esos eventos sirven para comprobar el pipeline, no para desplegar. La simulación ocurre en un runner efímero de GitHub Actions y no deja un servicio en línea al terminar el job.
+Genera y almacena los reportes de prueba como artefacto.
 
-### Configurar SonarCloud
+docker-integration:
 
-Vincula el repositorio a un proyecto de SonarCloud y, en **Settings → Secrets and variables → Actions**, configura:
+Se ejecuta únicamente si los tests pasaron exitosamente (needs: test-and-build).
 
-- Secreto `SONAR_TOKEN`: token de análisis.
-- Variable `SONAR_PROJECT_KEY`: clave del proyecto.
-- Variable `SONAR_ORGANIZATION`: identificador de la organización.
+Construye la imagen Docker y levanta el entorno con docker compose up -d.
 
-El job valida que estén configurados y falla explícitamente si falta alguno. Habilita también Dependabot alerts y security updates en los ajustes de seguridad del repositorio.
+Realiza un health check llamando a http://localhost:8098/actuator/health hasta confirmar respuesta HTTP 200 OK.
 
-## Cómo demostrar los criterios de la rúbrica
+## Endpoints de la API REST
 
-1. Abre un pull request hacia `main` o `master`. En **Actions**, muestra la ejecución del job de pruebas, el análisis SonarCloud y el escaneo Trivy. El job de despliegue no debe ejecutarse para el pull request.
-2. Fusiona el pull request y verifica la ejecución iniciada por el *push* a la rama principal. Muestra que las pruebas, SonarCloud y Trivy finalizaron antes del job de despliegue.
-3. En el job de despliegue, muestra `docker compose up`, la respuesta exitosa de `/actuator/health` y la limpieza final del entorno.
-4. Como evidencia local complementaria, muestra `docker compose ps` con API y base de datos saludables, las respuestas de salud y de `/api/orders`, y el reporte HTML de JaCoCo.
+| Método | Endpoint | Descripción | Estado HTTP Esperado |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/actuator/health` | Estado de salud del sistema | `200 OK` |
+| **GET** | `/api/orders` | Lista todos los pedidos | `200 OK` |
+| **GET** | `/api/orders/{id}` | Obtiene detalle de un pedido por ID | `200 OK` / `404 Not Found` |
+| **POST** | `/api/orders` | Crea un nuevo pedido | `201 Created` / `400 Bad Request` |
+| **POST** | `/api/orders/{id}/items` | Agrega un ítem a un pedido | `200 OK` / `400 Bad Request` |
+| **PUT** | `/api/orders/{id}/status` | Actualiza estado del pedido | `200 OK` / `409 Conflict` |
+| **DELETE** | `/api/orders/{id}` | Elimina un pedido | `204 No Content` / `404 Not Found` |
 
-| Criterio | Evidencia |
-| --- | --- |
-| Pipeline CI/CD | Ejecución del workflow en GitHub Actions |
-| Pruebas automatizadas | Job Maven aprobado y reportes JUnit |
-| Escalabilidad y seguridad para contenedores | Límites de recursos, healthchecks, usuario no root, `no-new-privileges`, SonarCloud y Trivy |
-| Despliegue cloud simulado | Job de Compose exitoso en el runner, endpoint saludable y limpieza del entorno |
+## Solución de Problemas Frecuentes
 
-## Fase 10: guía del repositorio
+Advertencia de ByteBuddy / Java 17 en tests:
 
-Este README documenta requisitos, ejecución local, endpoints, pruebas, contenedores, configuración del pipeline y evidencias sugeridas para revisar el proyecto desde cero.
+Solución: Pasar la propiedad -Dnet.bytebuddy.experimental=true al ejecutar los tests.
 
-## Archivos principales
+## Uso de Inteligencia Artificial
+Herramienta,Uso en el Proyecto
+Gemini / ChatGPT,"Apoyo en la estructuración de plantillas Markdown, generación del flujo en GitHub Actions y resolución de errores de entorno."
 
-- `src/main/java/`: API REST, lógica de pedidos, modelo y persistencia.
-- `src/test/java/`: pruebas unitarias y web.
-- `src/main/resources/application.properties`: configuración local con H2.
-- `src/main/resources/application-docker.properties`: configuración del perfil Docker.
-- `Dockerfile`, `.dockerignore` y `docker-compose.yml`: imagen y orquestación.
-- `.github/workflows/ci-cd.yml`: pipeline.
-- `.github/dependabot.yml`: actualizaciones propuestas para Maven y GitHub Actions.
-- `sonar-project.properties`: configuración de análisis y cobertura.
+## Reflexiones Individuales
 
-## Reflexión individual
+En este trabajo, mis compañeros y yo inicialmente desarrollamos versiones distintas del proyecto, después de organizarnos bien se seleccionó la mejor propuesta al proyecto y luego pude profundizar en cómo Docker permite empaquetar y ejecutar una aplicación en un entorno reproducible. Aprendí que los contenedores ayudan a que la aplicación y sus dependencias se ejecuten de forma más consistente en distintos equipos. Como aspecto por mejorar, reconozco que necesito organizar mejor el tiempo y avanzar por etapas, en lugar de dejar tareas para el final. En un próximo proyecto planificaría hitos pequeños y revisaría el progreso con anticipación.
 
-En este trabajo, mis compañeros y yo desarrollamos versiones distintas del proyecto y luego pude profundizar en cómo Docker permite empaquetar y ejecutar una aplicación en un entorno reproducible. Aprendí que los contenedores ayudan a que la aplicación y sus dependencias se ejecuten de forma más consistente en distintos equipos. Como aspecto por mejorar, reconozco que necesito organizar mejor el tiempo y avanzar por etapas, en lugar de dejar tareas para el final. En un próximo proyecto planificaría hitos pequeños y revisaría el progreso con anticipación.
+Reflexión — Valentina Cortez
 
-## Uso de herramientas de IA
+Reflexión — Joaquín Orellana
 
-Si se utilizó GitHub Copilot u otra herramienta de IA en esta entrega
+### Reflexión — Joaquín Orellana
+
+Las herramientas aplicadas en este proyecto despertaron un profundo interés en mí. La posibilidad de utilizar Docker y la contenerización me pareció una tecnología increíble, ya que hasta este punto no me había tocado trabajar con ella. Al estar en primer año, aún me encuentro aprendiendo las mejores prácticas y pipelines de trabajo; con frecuencia me ocurría que, al cambiar de computador, debía reconfigurar todo el entorno desde cero para continuar con un proyecto. En este contexto, comprendí cómo los contenedores facilitan enormemente la portabilidad y la flexibilidad al desarrollar software en distintos equipos.
+
+Por otro lado, la implementación de pruebas unitarias me pareció fundamental. A pesar de que el código que escribo aún no es masivo, a veces resulta complejo realizar revisiones manuales y asegurar la calidad del sistema. Esta herramienta, combinada con la automatización de GitHub Actions, permite definir criterios mínimos de calidad que se gestionan de forma automática. En general, considero una gran oportunidad haber desarrollado un proyecto integrando estas herramientas DevOps.
+
+Reflexión — Bastián Sandoval
+
+
