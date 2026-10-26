@@ -150,8 +150,8 @@ Este README documenta requisitos, ejecución local, endpoints, pruebas, contened
 
 ## Reflexión individual
 
-En este trabajo, mi compañero y yo desarrollamos versiones distintas del proyecto y luego pude profundizar en cómo Docker permite empaquetar y ejecutar una aplicación en un entorno reproducible. Aprendí que los contenedores ayudan a que la aplicación y sus dependencias se ejecuten de forma más consistente en distintos equipos. Como aspecto por mejorar, reconozco que necesito organizar mejor el tiempo y avanzar por etapas, en lugar de dejar tareas para el final. En un próximo proyecto planificaría hitos pequeños y revisaría el progreso con anticipación.
+En este trabajo, mis compañeros y yo desarrollamos versiones distintas del proyecto y luego pude profundizar en cómo Docker permite empaquetar y ejecutar una aplicación en un entorno reproducible. Aprendí que los contenedores ayudan a que la aplicación y sus dependencias se ejecuten de forma más consistente en distintos equipos. Como aspecto por mejorar, reconozco que necesito organizar mejor el tiempo y avanzar por etapas, en lugar de dejar tareas para el final. En un próximo proyecto planificaría hitos pequeños y revisaría el progreso con anticipación.
 
 ## Uso de herramientas de IA
 
-Si se utilizó GitHub Copilot u otra herramienta de IA en esta entrega, describe aquí el uso real y revisa el contenido con el equipo. Las justificaciones técnicas y reflexiones individuales exigidas por la evaluación deben ser redactadas y validadas por sus autores.
+Si se utilizó GitHub Copilot u otra herramienta de IA en esta entrega
