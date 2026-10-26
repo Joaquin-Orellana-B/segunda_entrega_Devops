@@ -10,20 +10,6 @@ Microservicio RESTful para la gestión del ciclo de vida de pedidos, desarrollad
 
 ---
 
-## 📑 Tabla de Contenidos
-1. [Descripción y Matriz de Indicadores](#-descripción-y-matriz-de-indicadores)
-2. [Stack Tecnológico y Arquitectura](#-stack-tecnológico-y-arquitectura)
-3. [Estructura del Proyecto](#-estructura-del-proyecto)
-4. [Guía de Ejecución Local y Docker](#-guía-de-ejecución)
-5. [Pruebas Automatizadas y Cobertura](#-pruebas-automatizadas-y-cobertura)
-6. [Pipeline CI/CD y Trazabilidad](#-pipeline-cicd-y-trazabilidad)
-7. [Endpoints de la API REST](#-endpoints-de-la-api-rest)
-8. [Solución de Problemas Frecuentes](#-solución-de-problemas-frecuentes)
-9. [Uso de Inteligencia Artificial](#-uso-de-inteligencia-artificial)
-10. [Reflexiones Individuales](#-reflexiones-individuales)
-
----
-
 ## 🎯 Descripción y Matriz de Indicadores
 
 El proyecto aborda la automatización completa del ciclo de vida de software: desde el desarrollo local hasta la construcción de imágenes, orquestación de contenedores y despliegue continuo mediante **GitHub Actions**.
