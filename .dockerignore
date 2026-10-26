@@ -1,0 +1,40 @@
+# Artefactos de compilación
+target/
+ 
+# Control de versiones
+.git/
+.gitignore
+ 
+# GitHub Actions
+.github/
+ 
+# Documentación
+README.md
+*.md
+ 
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+ 
+# Sistema operativo
+.DS_Store
+Thumbs.db
+ 
+# Logs
+*.log
+ 
+# Secretos
+.env
+.env.local
+*.env
+ 
+# Docker Compose
+docker-compose.yml
+docker-compose.override.yml
+ 
+# Sonar
+sonar-project.properties
