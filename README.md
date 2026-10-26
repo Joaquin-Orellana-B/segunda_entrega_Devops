@@ -195,14 +195,15 @@ Realiza un health check llamando a http://localhost:8098/actuator/health hasta c
 
 ## Endpoints de la API REST
 
-Método,Endpoint,Descripción,Estado HTTP Esperado
-GET,/actuator/health,Estado de salud del sistema,200 OK
-GET,/api/orders,Lista todos los pedidos,200 OK
-GET,/api/orders/{id},Obtiene detalle de un pedido por ID,200 OK / 404 Not Found
-POST,/api/orders,Crea un nuevo pedido,201 Created / 400 Bad Request
-POST,/api/orders/{id}/items,Agrega un ítem a un pedido,200 OK / 400 Bad Request
-PUT,/api/orders/{id}/status,Actualiza estado del pedido,200 OK / 409 Conflict
-DELETE,/api/orders/{id},Elimina un pedido,204 No Content / 404 Not Found
+| Método | Endpoint | Descripción | Estado HTTP Esperado |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/actuator/health` | Estado de salud del sistema | `200 OK` |
+| **GET** | `/api/orders` | Lista todos los pedidos | `200 OK` |
+| **GET** | `/api/orders/{id}` | Obtiene detalle de un pedido por ID | `200 OK` / `404 Not Found` |
+| **POST** | `/api/orders` | Crea un nuevo pedido | `201 Created` / `400 Bad Request` |
+| **POST** | `/api/orders/{id}/items` | Agrega un ítem a un pedido | `200 OK` / `400 Bad Request` |
+| **PUT** | `/api/orders/{id}/status` | Actualiza estado del pedido | `200 OK` / `409 Conflict` |
+| **DELETE** | `/api/orders/{id}` | Elimina un pedido | `204 No Content` / `404 Not Found` |
 
 ## Solución de Problemas Frecuentes
 
@@ -219,6 +220,12 @@ Gemini / ChatGPT,"Apoyo en la estructuración de plantillas Markdown, generació
 Reflexión — Valentina Cortez
 
 Reflexión — Joaquín Orellana
+
+### Reflexión — Joaquín Orellana
+
+Las herramientas aplicadas en este proyecto despertaron un profundo interés en mí. La posibilidad de utilizar Docker y la contenerización me pareció una tecnología increíble, ya que hasta este punto no me había tocado trabajar con ella. Al estar en primer año, aún me encuentro aprendiendo las mejores prácticas y pipelines de trabajo; con frecuencia me ocurría que, al cambiar de computador, debía reconfigurar todo el entorno desde cero para continuar con un proyecto. En este contexto, comprendí cómo los contenedores facilitan enormemente la portabilidad y la flexibilidad al desarrollar software en distintos equipos.
+
+Por otro lado, la implementación de pruebas unitarias me pareció fundamental. A pesar de que el código que escribo aún no es masivo, a veces resulta complejo realizar revisiones manuales y asegurar la calidad del sistema. Esta herramienta, combinada con la automatización de GitHub Actions, permite definir criterios mínimos de calidad que se gestionan de forma automática. En general, considero una gran oportunidad haber desarrollado un proyecto integrando estas herramientas DevOps.
 
 Reflexión — Bastián Sandoval
 
