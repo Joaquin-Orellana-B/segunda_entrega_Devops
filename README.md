@@ -149,8 +149,8 @@ La suite consta de **28 pruebas automatizadas** que garantizan la estabilidad de
 
 ### 📊 Cobertura de Código (JaCoCo)
 El proyecto cuenta con el plugin de **JaCoCo** configurado para auditar la cobertura de las pruebas:
-* **Capa de Servicios (`service`):** **97%** de cobertura en la lógica de negocio central.
-* **Cobertura Global:** **69%** de cobertura total del proyecto.
+* **Capa de Servicios (`service`):** **91%** de cobertura en la lógica de negocio central.
+* **Cobertura Global:** **63%** de cobertura total del proyecto.
 
 ### 🚀 Ejecución de Tests y Generación del Reporte
 
@@ -198,7 +198,7 @@ Solución: Pasar la propiedad -Dnet.bytebuddy.experimental=true al ejecutar los 
 
 ## Uso de Inteligencia Artificial
 Herramienta,Uso en el Proyecto
-Gemini / ChatGPT,"Apoyo en la estructuración de plantillas Markdown, generación del flujo en GitHub Actions y resolución de errores de entorno."
+Gemini: "Apoyo en la estructuración de plantillas Markdown, generación del flujo en GitHub Actions y resolución de errores de entorno."
 
 ## Reflexiones Individuales
 
