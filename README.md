@@ -202,9 +202,9 @@ Gemini / ChatGPT,"Apoyo en la estructuración de plantillas Markdown, generació
 
 ## Reflexiones Individuales
 
-Reflexión — Valentina Cortez
+### Reflexión — Valentina Cortez
 
-Reflexión — Joaquín Orellana
+En este trabajo, mis compañeros y yo inicialmente desarrollamos versiones distintas del proyecto, después de organizarnos bien se seleccionó la mejor propuesta al proyecto y luego pude profundizar en cómo Docker permite empaquetar y ejecutar una aplicación en un entorno reproducible. Aprendí que los contenedores ayudan a que la aplicación y sus dependencias se ejecuten de forma más consistente en distintos equipos. Como aspecto por mejorar, reconozco que necesito organizar mejor el tiempo y avanzar por etapas, en lugar de dejar tareas para el final. En un próximo proyecto planificaría hitos pequeños y revisaría el progreso con anticipación.
 
 ### Reflexión — Joaquín Orellana
 
