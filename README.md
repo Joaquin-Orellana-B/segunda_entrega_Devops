@@ -154,23 +154,24 @@ mvn clean test -Dnet.bytebuddy.experimental=true
 
 ## Pipeline CI/CD y Trazabilidad
 
-El archivo .github/workflows/ci-cd.yml define dos jobs automatizados en GitHub Actions:
+El archivo `.github/workflows/ci-cd.yml` define una canalización de integración y despliegue continuo en **GitHub Actions** estructurada en tres jobs principales:
 
-test-and-build:
+### 1. `test-and-build` (Compilación, Pruebas y Cobertura)
+* **Entorno:** Configura la máquina virtual con JDK 17 (Eclipse Temurin) y habilita la caché de dependencias de Maven.
+* **Ejecución:** Corre el comando `mvn clean verify -B` para compilar la aplicación y ejecutar todas las pruebas automatizadas (JUnit 5).
+* **Artefactos de Evidencia:**
+  * Almacena los resultados de las pruebas unitarias (`target/surefire-reports/`).
+  * Almacena el reporte interactivo HTML de cobertura de código de **JaCoCo** (`target/site/jacoco/`).
 
-Descarga el código y configura JDK 17 Temurin.
+### 2. `security-analysis` (Calidad de Código y Seguridad)
+* **Dependencia:** Se ejecuta únicamente si el job `test-and-build` finaliza exitosamente.
+* **Análisis:** Integra **SonarQube / SonarCloud** mediante el `sonar-maven-plugin` para evaluar la calidad del código, buscar vulnerabilidades de seguridad (*code smells*) y validar el *Quality Gate*.
 
-Ejecuta mvn clean verify (compila y corre los 28 tests).
-
-Genera y almacena los reportes de prueba como artefacto.
-
-docker-integration:
-
-Se ejecuta únicamente si los tests pasaron exitosamente (needs: test-and-build).
-
-Construye la imagen Docker y levanta el entorno con docker compose up -d.
-
-Realiza un health check llamando a http://localhost:8098/actuator/health hasta confirmar respuesta HTTP 200 OK.
+### 3. `docker-integration` (Integración con Docker y Healthcheck)
+* **Dependencia:** Se ejecuta tras la validación de las pruebas (`needs: test-and-build`).
+* **Despliegue:** Construye la imagen Docker de la API y levanta la infraestructura completa mediante `docker compose up -d --build`.
+* **Prueba de Salud Resiliente (*Healthcheck*):** Ejecuta un bucle con reintentos hacia `http://localhost:8098/actuator/health` hasta confirmar una respuesta `HTTP 200 OK` (`{"status":"UP"}`).
+* **Limpieza:** Detiene y elimina los contenedores y volúmenes temporales al concluir la verificación (`docker compose down -v`).
 
 ## Endpoints de la API REST
 
