@@ -214,4 +214,6 @@ Por otro lado, la implementación de pruebas unitarias me pareció fundamental. 
 
 Reflexión — Bastián Sandoval
 
+La realización de este trabajo fue muy desafiante, ya que me tenia que familiarizar con errores que nunca había visto, había que ver como se conectaban y relacionaban cada script de java y docker para que el despliegue y la orquestación tengan sentido y funcione con la base de datos. En especial la orquestación con compose, dado que no me salían los estados healty para poder agregar info a la bd, por lo que estuve peleando harto rato, hasta que al final lo pude lograr con perseverancia, mucho animo y apoyo. Me siento realizado, confiado y capaz para enfrentar un desafío como este.
 
+También debo admitir que el entorno de spring boot me confundido, pero nada puede superar leer atentamente la documentación disponible que hay en internet y en las guías para poder entender todo y no perderse.
