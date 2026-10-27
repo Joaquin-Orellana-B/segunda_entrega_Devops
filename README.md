@@ -142,36 +142,41 @@ docker compose down -v
 
 ## Pruebas Automatizadas y Cobertura
 
-La suite consta de 28 pruebas automatizadas que garantizan la estabilidad del sistema:
+La suite consta de **28 pruebas automatizadas** que garantizan la estabilidad del sistema:
 
-Pruebas Unitarias (OrderServiceTest): 15 pruebas de lógica de negocio y excepciones usando Mockito.
+* **Pruebas Unitarias (`OrderServiceTest`):** 15 pruebas de lógica de negocio y manejo de excepciones utilizando Mockito.
+* **Pruebas de Integración Web (`OrderControllerTest`):** 13 pruebas de endpoints HTTP y mapeo JSON con MockMvc.
 
-Pruebas de Integración Web (OrderControllerTest): 13 pruebas de endpoints HTTP y mapeo JSON con MockMvc.
+### 📊 Cobertura de Código (JaCoCo)
+El proyecto cuenta con el plugin de **JaCoCo** configurado para auditar la cobertura de las pruebas:
+* **Capa de Servicios (`service`):** **97%** de cobertura en la lógica de negocio central.
+* **Cobertura Global:** **69%** de cobertura total del proyecto.
 
-Para ejecutar los tests localmente:
+### 🚀 Ejecución de Tests y Generación del Reporte
 
-mvn clean test -Dnet.bytebuddy.experimental=true
+**Opción 1: Mediante Docker **
+
+docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-17 mvn clean verify
 
 ## Pipeline CI/CD y Trazabilidad
 
-El archivo `.github/workflows/ci-cd.yml` define una canalización de integración y despliegue continuo en **GitHub Actions** estructurada en tres jobs principales:
+El archivo .github/workflows/ci-cd.yml define dos jobs automatizados en GitHub Actions:
 
-### 1. `test-and-build` (Compilación, Pruebas y Cobertura)
-* **Entorno:** Configura la máquina virtual con JDK 17 (Eclipse Temurin) y habilita la caché de dependencias de Maven.
-* **Ejecución:** Corre el comando `mvn clean verify -B` para compilar la aplicación y ejecutar todas las pruebas automatizadas (JUnit 5).
-* **Artefactos de Evidencia:**
-  * Almacena los resultados de las pruebas unitarias (`target/surefire-reports/`).
-  * Almacena el reporte interactivo HTML de cobertura de código de **JaCoCo** (`target/site/jacoco/`).
+test-and-build:
 
-### 2. `security-analysis` (Calidad de Código y Seguridad)
-* **Dependencia:** Se ejecuta únicamente si el job `test-and-build` finaliza exitosamente.
-* **Análisis:** Integra **SonarQube / SonarCloud** mediante el `sonar-maven-plugin` para evaluar la calidad del código, buscar vulnerabilidades de seguridad (*code smells*) y validar el *Quality Gate*.
+Descarga el código y configura JDK 17 Temurin.
 
-### 3. `docker-integration` (Integración con Docker y Healthcheck)
-* **Dependencia:** Se ejecuta tras la validación de las pruebas (`needs: test-and-build`).
-* **Despliegue:** Construye la imagen Docker de la API y levanta la infraestructura completa mediante `docker compose up -d --build`.
-* **Prueba de Salud Resiliente (*Healthcheck*):** Ejecuta un bucle con reintentos hacia `http://localhost:8098/actuator/health` hasta confirmar una respuesta `HTTP 200 OK` (`{"status":"UP"}`).
-* **Limpieza:** Detiene y elimina los contenedores y volúmenes temporales al concluir la verificación (`docker compose down -v`).
+Ejecuta mvn clean verify (compila y corre los 28 tests).
+
+Genera y almacena los reportes de prueba como artefacto.
+
+docker-integration:
+
+Se ejecuta únicamente si los tests pasaron exitosamente (needs: test-and-build).
+
+Construye la imagen Docker y levanta el entorno con docker compose up -d.
+
+Realiza un health check llamando a http://localhost:8098/actuator/health hasta confirmar respuesta HTTP 200 OK.
 
 ## Endpoints de la API REST
 
@@ -197,11 +202,9 @@ Gemini / ChatGPT,"Apoyo en la estructuración de plantillas Markdown, generació
 
 ## Reflexiones Individuales
 
-Reflexión — Valentina Cortez
+### Reflexión — Valentina Cortez
 
 En este trabajo, mis compañeros y yo inicialmente desarrollamos versiones distintas del proyecto, después de organizarnos bien se seleccionó la mejor propuesta al proyecto y luego pude profundizar en cómo Docker permite empaquetar y ejecutar una aplicación en un entorno reproducible. Aprendí que los contenedores ayudan a que la aplicación y sus dependencias se ejecuten de forma más consistente en distintos equipos. Como aspecto por mejorar, reconozco que necesito organizar mejor el tiempo y avanzar por etapas, en lugar de dejar tareas para el final. En un próximo proyecto planificaría hitos pequeños y revisaría el progreso con anticipación.
-
-
 
 ### Reflexión — Joaquín Orellana
 
@@ -209,6 +212,12 @@ Las herramientas aplicadas en este proyecto despertaron un profundo interés en 
 
 Por otro lado, la implementación de pruebas unitarias me pareció fundamental. A pesar de que el código que escribo aún no es masivo, a veces resulta complejo realizar revisiones manuales y asegurar la calidad del sistema. Esta herramienta, combinada con la automatización de GitHub Actions, permite definir criterios mínimos de calidad que se gestionan de forma automática. En general, considero una gran oportunidad haber desarrollado un proyecto integrando estas herramientas DevOps.
 
-Reflexión — Bastián Sandoval
+### Reflexión — Bastián Sandoval
+
+La realización de este trabajo fue muy desafiante, ya que me tenia que familiarizar con errores que nunca había visto, había que ver como se conectaban y relacionaban cada script de java y docker para que el despliegue y la orquestación tengan sentido y funcione con la base de datos. En especial la orquestación con compose, dado que no me salían los estados healty para poder agregar info a la bd, por lo que estuve peleando harto rato, hasta que al final lo pude lograr con perseverancia, mucho animo y apoyo. Me siento realizado, confiado y capaz para enfrentar un desafío como este.
+
+También debo admitir que el entorno de spring boot me confundido, pero nada puede superar leer atentamente la documentación disponible que hay en internet y en las guías para poder entender todo y no perderse.
+
+
 
 
