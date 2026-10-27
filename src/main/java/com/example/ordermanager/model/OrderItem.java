@@ -1,23 +1,18 @@
 package com.example.ordermanager.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
-/**
- * Ítem individual dentro de un pedido.
- *
- * @Embeddable → No tiene tabla propia; se guarda dentro de "orders".
- */
-@Embeddable
+@Entity
+@Table(name = "order_items")
 public class OrderItem {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
     @Column(name = "product_name", nullable = false, length = 150)
     private String productName;
 
@@ -28,7 +23,7 @@ public class OrderItem {
     private BigDecimal unitPrice;
 
     @ManyToOne
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "order_id", nullable = false)
     @JsonBackReference
     private Order order;
 
@@ -49,19 +44,20 @@ public class OrderItem {
         this.unitPrice = unitPrice;
     }
 
-    /**
-     * Subtotal del ítem: cantidad × precio unitario.
-     */
     public BigDecimal getSubtotal() {
         return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+    public Order getOrder() { return order; }
+    public void setOrder(Order order) { this.order = order; }
 
     @Override
     public boolean equals(Object o) {

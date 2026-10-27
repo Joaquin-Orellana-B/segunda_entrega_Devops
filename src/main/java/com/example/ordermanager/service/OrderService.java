@@ -48,14 +48,15 @@ public class OrderService {
     @Transactional
     public Order createOrder(CreateOrderRequest request) {
         Order order = new Order(request.getCustomerName());
-
+        
         if (request.getItems() != null) {
             for (AddItemRequest itemReq : request.getItems()) {
-                order.addItem(new OrderItem(
-                        itemReq.getProductName(),
-                        itemReq.getQuantity(),
-                        itemReq.getUnitPrice()
-                ));
+                OrderItem item = new OrderItem(
+                     itemReq.getProductName(),
+                     itemReq.getQuantity(),
+                     itemReq.getUnitPrice()
+                );
+                order.addItem(item);   // ✅ solo una vez, con la variable declarada
             }
         }
         return repository.save(order);

@@ -36,15 +36,9 @@ public class Order {
 
     @Column(nullable = false)
     private boolean completed;
-
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "order_items",
-            joinColumns = @JoinColumn(name = "order_id")
-    )
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference   // o @JsonIgnore si no quieres exponer items
+    
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY,  orphanRemoval = true)
+    @JsonManagedReference   
     private List<OrderItem> items = new ArrayList<>();
 
     @PrePersist
@@ -78,6 +72,7 @@ public class Order {
      * Agrega un ítem y recalcula el total.
      */
     public void addItem(OrderItem item) {
+        item.setOrder(this);   
         this.items.add(item);
         recalculateTotal();
     }
