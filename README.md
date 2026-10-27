@@ -142,15 +142,21 @@ docker compose down -v
 
 ## Pruebas Automatizadas y Cobertura
 
-La suite consta de 28 pruebas automatizadas que garantizan la estabilidad del sistema:
+La suite consta de **28 pruebas automatizadas** que garantizan la estabilidad del sistema:
 
-Pruebas Unitarias (OrderServiceTest): 15 pruebas de lógica de negocio y excepciones usando Mockito.
+* **Pruebas Unitarias (`OrderServiceTest`):** 15 pruebas de lógica de negocio y manejo de excepciones utilizando Mockito.
+* **Pruebas de Integración Web (`OrderControllerTest`):** 13 pruebas de endpoints HTTP y mapeo JSON con MockMvc.
 
-Pruebas de Integración Web (OrderControllerTest): 13 pruebas de endpoints HTTP y mapeo JSON con MockMvc.
+### 📊 Cobertura de Código (JaCoCo)
+El proyecto cuenta con el plugin de **JaCoCo** configurado para auditar la cobertura de las pruebas:
+* **Capa de Servicios (`service`):** **97%** de cobertura en la lógica de negocio central.
+* **Cobertura Global:** **69%** de cobertura total del proyecto.
 
-Para ejecutar los tests localmente:
+### 🚀 Ejecución de Tests y Generación del Reporte
 
-mvn clean test -Dnet.bytebuddy.experimental=true
+**Opción 1: Mediante Docker **
+
+docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-17 mvn clean verify
 
 ## Pipeline CI/CD y Trazabilidad
 
