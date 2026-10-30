@@ -50,11 +50,11 @@ jobs:
   # JOB 2: ANÁLISIS DE CALIDAD Y SEGURIDAD (SonarCloud)
   # ==========================================================
   security-analysis:
-    name: 🛡️ Análisis SonarCloud y Quality Gate
+    name:  Análisis SonarCloud y Quality Gate
     runs-on: ubuntu-latest
     needs: test-and-build
     
-    if: ${{ secrets.SONAR_TOKEN != '' }}
+   
 
     steps:
       - name: Checkout del código (Historial completo para SonarCloud)
