@@ -6,8 +6,15 @@ En esta fase se implementó el pipeline de Integración Continua (CI/CD) mediant
 ## Componentes Configurados
 
 1. **Pipeline de GitHub Actions (`.github/workflows/ci-cd.yml`)**:
-   - **Job `test-and-build`**: Descarga el código, configura JDK 17 y ejecuta la suite completa de pruebas unitarias e integración (`mvn verify`). Guarda los artefactos de ejecución.
-   - **Job `docker-integration`**: Depende del éxito de la etapa previa (`needs: test-and-build`), construye la imagen Docker, levanta la orquestación con Compose y valida la respuesta del endpoint `/actuator/health`.
+   - Ejecuta las pruebas y valida el arranque con Docker Compose.
+   - En pushes a `main`, publica en GHCR la misma imagen validada por Compose, etiquetada con el SHA completo del commit.
+   - Despliega por SSH la imagen publicada en el servidor configurado en el environment `production`; verifica `/actuator/health` y compara la imagen del contenedor con la etiqueta del commit.
+   - Registra el commit, la imagen y el run del workflow en el resumen de GitHub Actions.
 
-2. **Gestión de Vulnerabilidades (`.github/dependabot.yml`)**:
+2. **Configuración del despliegue**:
+   - El environment `production` requiere los secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` y `SSH_KNOWN_HOSTS`, además de la variable `DEPLOY_PATH`.
+   - GHCR mantiene el paquete privado; el servidor lo descarga con un token clásico limitado a `read:packages`, configurado como secret `GHCR_READ_TOKEN`.
+   - Las credenciales de PostgreSQL se proporcionan en el archivo `.env` del servidor y no se guardan en Git.
+
+3. **Gestión de Vulnerabilidades (`.github/dependabot.yml`)**:
    - Configuración de revisiones semanales automáticas para librerías Maven (`pom.xml`) e imágenes base de Docker (`Dockerfile`).

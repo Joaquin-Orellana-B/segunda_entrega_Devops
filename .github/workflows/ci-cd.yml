@@ -2,15 +2,25 @@ name: CI/CD Pipeline - Order Manager
 
 on:
   push:
-    branches: [ "main", "master", "develop/JO" ]
+    branches: ["main", "master", "develop/JO"]
   pull_request:
-    branches: [ "main", "master", "develop/JO" ]
+    branches: ["main", "master", "develop/JO"]
+
+env:
+  JAVA_VERSION: '17'
+  IMAGE_NAME: order-manager
+
+permissions:
+  contents: read
 
 jobs:
-  test-and-build:
-    name: Build & Run Automated Tests
-    runs-on: ubuntu-latest
+  # ==========================================================
+  # JOB 1: TEST (IE2)
+  # ==========================================================
 
+  test:
+    name: Tests y Cobertura
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -22,34 +32,290 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Compilar y Ejecutar Pruebas Automatizadas
-        run: mvn clean verify -B
+      - name: Ejecutar Pruebas unitarias
+        run: mvn clean test
 
-      - name: Guardar Reporte de Pruebas (Artifact)
-        if: always()
+      - name: Generar Reporte de Cobertura Jacoco
+        run: mvn jacoco:report
+
+      - name: Subir reporte como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports
-          path: target/surefire-reports/
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 7
 
-  docker-integration:
-    name: Test Docker Compose Deployment
+  # ==========================================================
+  # JOB 2: SECURITY (IE3)
+  # ==========================================================
+
+  security:
+    name: Análisis de Seguridad
     runs-on: ubuntu-latest
-    needs: test-and-build
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Configurar JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Ejecutar test (para cobertura)
+        run: mvn clean test
+
+      - name: Análisis con SonarQube
+        if: ${{ env.SONAR_TOKEN != '' }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.qualitygate.wait=true
+
+  # ==========================================================
+  # JOB 3: BUILD (IE1)
+  # ==========================================================
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security]
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Construir y Levantar Contenedores
-        run: docker compose up -d --build
-
-      - name: Verificar Salud del Servicio (Actuator Healthcheck)
+      - name: Construir imagen Docker
         run: |
-          echo "Esperando a que la aplicación esté completamente lista..."
-          sleep 15
-          curl -f http://localhost:8098/actuator/health || exit 1
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            .
 
-      - name: Detener y Limpiar Contenedores
+      - name: Guardar imagen construida
+        run: docker save ${{ env.IMAGE_NAME }}:${{ github.sha }} | gzip > image.tar.gz
+
+      - name: Subir imagen como artefacto temporal
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar.gz
+          retention-days: 1
+
+  integration:
+    name: Validar despliegue con Docker Compose
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      POSTGRES_DB: orderdb
+      POSTGRES_USER: ci_user
+      POSTGRES_PASSWORD: ci_password
+      IMAGE_REPOSITORY: order-manager
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Descargar imagen construida
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Cargar imagen construida
+        run: gzip -dc image.tar.gz | docker load
+
+      - name: Levantar servicios con Docker Compose
+        run: docker compose up -d --no-build
+
+      - name: Verificar salud de la aplicación
+        run: |
+          curl --fail --retry 20 --retry-connrefused --retry-delay 3 --max-time 5 \
+            http://localhost:8098/actuator/health
+
+      - name: Detener servicios de prueba
         if: always()
         run: docker compose down -v
+
+  # ==========================================================
+  # JOB 4: PUBLISH (IE4)
+  # ==========================================================
+
+  publish:
+    name: Publicar imagen versionada en GHCR
+    runs-on: ubuntu-latest
+    needs: integration
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Iniciar sesión en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Definir nombre de imagen en minúsculas
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Descargar imagen validada por Docker Compose
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Cargar, etiquetar y publicar la misma imagen validada
+        env:
+          IMAGE_REPOSITORY: ${{ steps.image.outputs.name }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          gzip -dc image.tar.gz | docker load
+          docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+          docker push "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+
+  # ==========================================================
+  # JOB 5: DEPLOY (IE4)
+  # ==========================================================
+
+  deploy:
+    name: Desplegar en servidor Linux
+    runs-on: ubuntu-latest
+    needs: publish
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Validar configuración de despliegue
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          test -n "$SSH_HOST" || { echo "::error::Falta SSH_HOST en los secretos del environment production"; exit 1; }
+          test -n "$SSH_USER" || { echo "::error::Falta SSH_USER en los secretos del environment production"; exit 1; }
+          test -n "$SSH_PRIVATE_KEY" || { echo "::error::Falta SSH_PRIVATE_KEY en los secretos del environment production"; exit 1; }
+          test -n "$SSH_KNOWN_HOSTS" || { echo "::error::Falta SSH_KNOWN_HOSTS en los secretos del environment production"; exit 1; }
+          test -n "$GHCR_USERNAME" || { echo "::error::Falta GHCR_USERNAME en los secretos del environment production"; exit 1; }
+          test -n "$GHCR_READ_TOKEN" || { echo "::error::Falta GHCR_READ_TOKEN en los secretos del environment production"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "::error::Falta DEPLOY_PATH en las variables del environment production"; exit 1; }
+          [[ "$DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$DEPLOY_PATH" != *..* ]] || {
+            echo "::error::DEPLOY_PATH debe ser una ruta absoluta simple, sin espacios ni segmentos '..'"
+            exit 1
+          }
+
+      - name: Configurar acceso SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Copiar configuración de Compose al servidor
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "mkdir -p '$DEPLOY_PATH'"
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes docker-compose.yml "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/docker-compose.yml"
+
+      - name: Autenticar servidor en GHCR
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_READ_TOKEN" |
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" \
+              "docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
+
+      - name: Desplegar la imagen publicada y verificar versión
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          IMAGE_REPOSITORY="${IMAGE_REPOSITORY,,}"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' IMAGE_REPOSITORY='$IMAGE_REPOSITORY' IMAGE_TAG='$IMAGE_TAG' GITHUB_SHA='$GITHUB_SHA' GITHUB_RUN_ID='$GITHUB_RUN_ID' bash -s" <<'REMOTE'
+          set -euo pipefail
+          trap 'docker logout ghcr.io' EXIT
+          cd "$DEPLOY_PATH"
+          export IMAGE_REPOSITORY IMAGE_TAG
+
+          docker compose config --quiet
+          docker compose pull app
+          docker compose up -d --no-build app
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --max-time 5 http://127.0.0.1:8098/actuator/health >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "La aplicación no quedó saludable dentro del tiempo esperado; revisar los logs directamente en el servidor." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+
+          container_id="$(docker compose ps -q app)"
+          if [ -z "$container_id" ]; then
+            echo "No se encontró el contenedor de la aplicación." >&2
+            exit 1
+          fi
+
+          expected_image_id="$(docker image inspect "$IMAGE_REPOSITORY:$IMAGE_TAG" --format '{{.Id}}')"
+          running_image_id="$(docker inspect "$container_id" --format '{{.Image}}')"
+          if [ "$expected_image_id" != "$running_image_id" ]; then
+            echo "El contenedor ejecuta una imagen distinta a la publicada para este commit." >&2
+            exit 1
+          fi
+
+          echo "Despliegue verificado"
+          echo "Commit: $GITHUB_SHA"
+          echo "Imagen: $IMAGE_REPOSITORY:$IMAGE_TAG"
+          echo "Run ID: $GITHUB_RUN_ID"
+          REMOTE
+
+      - name: Registrar resumen del despliegue
+        env:
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_REPOSITORY="${IMAGE_REPOSITORY,,}"
+          {
+            echo "## Despliegue a producción"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Imagen: \`${IMAGE_REPOSITORY}:${IMAGE_TAG}\`"
+            echo "- Rama: \`${GITHUB_REF_NAME}\`"
+            echo "- Workflow run: [${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+            echo "- Resultado: despliegue y health check verificados"
+          } >> "$GITHUB_STEP_SUMMARY"

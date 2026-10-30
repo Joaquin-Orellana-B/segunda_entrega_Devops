@@ -6,15 +6,15 @@ services:
     container_name: order-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: orderdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-orderdb}
+      POSTGRES_USER: ${POSTGRES_USER:?Define POSTGRES_USER in .env or the environment}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD in .env or the environment}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d orderdb"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,16 +23,16 @@ services:
 
   app:
     build: .
-    image: order-manager:latest
-    container_name: order-manager-app
+    image: "${IMAGE_REPOSITORY:-order-manager}:${IMAGE_TAG:-latest}"
+    container_name: segunda_entrega_devops-app-1
     restart: unless-stopped
     ports:
       - "8098:8098"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/orderdb
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-orderdb}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Define POSTGRES_USER in .env or the environment}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD in .env or the environment}
     depends_on:
       db:
         condition: service_healthy

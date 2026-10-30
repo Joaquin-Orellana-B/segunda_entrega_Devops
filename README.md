@@ -160,23 +160,26 @@ docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-17 mvn clean 
 
 ## Pipeline CI/CD y Trazabilidad
 
-El archivo .github/workflows/ci-cd.yml define dos jobs automatizados en GitHub Actions:
+El workflow `.github/workflows/ci-cd.yml` ejecuta las pruebas y valida el despliegue con Docker Compose. Al subir cambios a `main`, publica en GHCR la imagen identificada por el SHA del commit y la despliega por SSH en el servidor configurado en el environment `production`. El job registra el commit y la imagen en el resumen de GitHub Actions y verifica el health check y la imagen que está ejecutando el contenedor.
 
-test-and-build:
+### Configurar el despliegue
 
-Descarga el código y configura JDK 17 Temurin.
+1. En GitHub, habilita GHCR para el repositorio. La imagen se mantiene privada y el servidor la descarga usando un token de solo lectura.
+2. En **Settings → Environments**, crea el environment `production`.
+3. Agrega estos secrets al environment:
+   - `SSH_HOST`: host o dirección del servidor.
+   - `SSH_USER`: usuario SSH con permiso para ejecutar Docker y Docker Compose.
+   - `SSH_PRIVATE_KEY`: llave privada de despliegue. No la agregues al repositorio.
+   - `SSH_KNOWN_HOSTS`: clave del host SSH obtenida y verificada por un canal confiable; no desactives la verificación de host.
+   - `GHCR_USERNAME`: usuario de GitHub propietario de un token personal clásico con permiso `read:packages`.
+   - `GHCR_READ_TOKEN`: el token clásico con permiso `read:packages`. No uses un token con permisos de escritura.
+4. Agrega la variable `DEPLOY_PATH`, por ejemplo `/opt/order-manager`. El usuario SSH debe poder escribir en esa carpeta.
+5. Instala Docker Engine, Docker Compose y `curl` en el servidor. Configura el acceso del usuario de despliegue a Docker.
+6. Crea manualmente un archivo `.env` dentro de `DEPLOY_PATH` con `POSTGRES_DB`, `POSTGRES_USER` y `POSTGRES_PASSWORD`. Usa una contraseña fuerte, aplica permisos `chmod 600 .env` y no la subas a GitHub.
+7. Configura el firewall para permitir el puerto `8098` solo según las necesidades del servicio. PostgreSQL queda enlazado a `127.0.0.1:5432`, no a todas las interfaces.
+8. Fusiona un cambio validado en `main`. El despliegue ocurre solo para pushes a esa rama. En el resumen del job aparecerán el SHA y la imagen versionada.
 
-Ejecuta mvn clean verify (compila y corre los 28 tests).
-
-Genera y almacena los reportes de prueba como artefacto.
-
-docker-integration:
-
-Se ejecuta únicamente si los tests pasaron exitosamente (needs: test-and-build).
-
-Construye la imagen Docker y levanta el entorno con docker compose up -d.
-
-Realiza un health check llamando a http://localhost:8098/actuator/health hasta confirmar respuesta HTTP 200 OK.
+Para desarrollo local, copia `.env.example` a `.env` y reemplaza la contraseña de ejemplo. El `.env` está excluido de Git.
 
 ## Endpoints de la API REST
 
@@ -217,7 +220,4 @@ Por otro lado, la implementación de pruebas unitarias me pareció fundamental. 
 La realización de este trabajo fue muy desafiante, ya que me tenia que familiarizar con errores que nunca había visto, había que ver como se conectaban y relacionaban cada script de java y docker para que el despliegue y la orquestación tengan sentido y funcione con la base de datos. En especial la orquestación con compose, dado que no me salían los estados healty para poder agregar info a la bd, por lo que estuve peleando harto rato, hasta que al final lo pude lograr con perseverancia, mucho animo y apoyo. Me siento realizado, confiado y capaz para enfrentar un desafío como este.
 
 También debo admitir que el entorno de spring boot me confundido, pero nada puede superar leer atentamente la documentación disponible que hay en internet y en las guías para poder entender todo y no perderse.
-
-
-
 
