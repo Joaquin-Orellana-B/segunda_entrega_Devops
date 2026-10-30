@@ -2,9 +2,9 @@ name: CI/CD Pipeline - Order Manager
 
 on:
   push:
-    branches: [ "main", "master", "develop/JO" ]
+    branches: [ "main", "master", "develop/**", "develop-vc-2" ]
   pull_request:
-    branches: [ "main", "master", "develop/JO" ]
+    branches: [ "main", "master", "develop/**", "develop-vc-2" ]
 
 jobs:
   test-and-build:
