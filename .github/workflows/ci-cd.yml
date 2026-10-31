@@ -9,13 +9,19 @@ on:
 env:
   JAVA_VERSION: '17'
   IMAGE_NAME: order-manager
- 
+
+# declarar los job con permiso de read por defecto
+permissions:
+  contents: read
+
 jobs:
  
   # ==========================================================
   # JOB 1: TEST (IE2)
   # ==========================================================
   test:
+    permissions:
+      contents: read
     name: �� Tests y Cobertura
     runs-on: ubuntu-latest
     steps:
@@ -46,6 +52,9 @@ jobs:
   # JOB 2: SECURITY (IE3)
   # ==========================================================
   security:
+    permissions:
+      contents: read
+      security-events: write
     name: �� Análisis de Seguridad
     runs-on: ubuntu-latest
     needs: test
@@ -81,6 +90,9 @@ jobs:
   # JOB 3: BUILD (IE1)
   # ==========================================================
   build:
+    permissions:
+      contents: read
+      packages: write
     name: �� Build Docker Image
     runs-on: ubuntu-latest
     needs: [ test, security ]
@@ -114,6 +126,8 @@ jobs:
   # JOB 4: DEPLOY (IE4)
   # ==========================================================
   deploy:
+    permissions:
+      contents: read
     name: �� Despliegue Automático
     runs-on: ubuntu-latest
     needs: build
