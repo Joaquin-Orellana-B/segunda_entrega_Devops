@@ -2,9 +2,9 @@ name: CI/CD Pipeline - Order Manager
 
 on:
   push:
-    branches: [ "main", "master", "develop/**", "develop-vc-2" ]
+    branches: [ "main", "master", "develop/**", "develop-vc-2", "pre-merge" ]
   pull_request:
-    branches: [ "main", "master", "develop/**", "develop-vc-2" ]
+    branches: [ "main", "master", "develop/**", "develop-vc-2", "pre-merge" ]
 
 env:
   JAVA_VERSION: '17'
