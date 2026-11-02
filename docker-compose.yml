@@ -12,12 +12,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      # Dinámico: evalúa con las mismas variables que creó la BD
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-orderdb}"]
       interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 15s # Otorga 15s de gracia para inicializar
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -31,7 +30,8 @@ services:
 
   app:
     build: .
-    image: order-manager:latest
+    # Permite tag dinámico (Commit SHA / GHCR) en CI/CD y cae en 'latest' en local
+    image: ${IMAGE_NAME:-order-manager}:${IMAGE_TAG:-latest}
     container_name: order-manager-app
     restart: unless-stopped
     ports:
@@ -41,6 +41,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/${POSTGRES_DB:-orderdb}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Forzar dialecto y driver de PostgreSQL sobrescribiendo H2
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       order-db:
         condition: service_healthy
