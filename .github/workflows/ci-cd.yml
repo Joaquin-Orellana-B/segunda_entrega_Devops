@@ -5,22 +5,27 @@ on:
     branches: [ "main", "master", "develop/**", "develop-vc-2" ]
   pull_request:
     branches: [ "main", "master", "develop/**", "develop-vc-2" ]
+
 env:
   JAVA_VERSION: '17'
+  IMAGE_NAME: order-manager
+
+permissions:
+  contents: read
 
 jobs:
   # ==========================================================
-  # JOB 1: TESTS Y COBERTURA (JaCoCo)
+  # JOB 1: TESTS Y COBERTURA (JaCoCo + Surefire)
   # ==========================================================
   test-and-build:
-    name: Build, Tests & Cobertura JaCoCo
+    name: 🧪 Tests y Cobertura
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar JDK 17 (Temurin)
+      - name: Configurar JDK ${{ env.JAVA_VERSION }} (Temurin)
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
@@ -30,7 +35,7 @@ jobs:
       - name: Compilar y Ejecutar Pruebas Automatizadas
         run: mvn clean verify -B
 
-      - name: Guardar Reporte de Pruebas JUnit (Artifact)
+      - name: Guardar Reporte de Pruebas JUnit
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -38,7 +43,7 @@ jobs:
           path: target/surefire-reports/
           retention-days: 7
 
-      - name: Guardar Reporte de Cobertura JaCoCo (Artifact)
+      - name: Guardar Reporte de Cobertura JaCoCo
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -47,41 +52,45 @@ jobs:
           retention-days: 7
 
   # ==========================================================
-  # JOB 2: ANÁLISIS DE CALIDAD Y SEGURIDAD (SonarCloud)
+  # JOB 2: ANÁLISIS DE SEGURIDAD Y CALIDAD (SonarCloud)
   # ==========================================================
   security-analysis:
-    name: Análisis SonarCloud y Quality Gate
+    name: 🛡️ Análisis SonarCloud & Quality Gate
     runs-on: ubuntu-latest
     needs: test-and-build
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
-      - name: Checkout del código (Historial completo para SonarCloud)
+      - name: Checkout del código (Historial completo)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-     
       - name: Configurar JDK 21 (Temurin)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
 
       - name: Ejecutar Análisis en SonarCloud
+        if: ${{ secrets.SONAR_TOKEN != '' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION || secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.qualitygate.wait=true
 
   # ==========================================================
-  # JOB 3: DESPLIEGUE SIMULADO EN DOCKER (Healthcheck)
+  # JOB 3: PRUEBA DE INTEGRACIÓN DOCKER (Para todas las ramas/PRs)
   # ==========================================================
-  docker-integration:
-    name: Test Docker Compose Deployment
+  docker-integration-test:
+    name: 🐳 Test de Integración Docker
     runs-on: ubuntu-latest
     needs: test-and-build
 
@@ -92,14 +101,72 @@ jobs:
       - name: Construir y Levantar Contenedores
         run: docker compose up -d --build
 
-      - name: Verificar Salud del Servicio (Actuator Healthcheck)
+      - name: Verificar Salud del Servicio (Bucle de reintentos)
         run: |
-          echo "Esperando a que la aplicación esté completamente lista..."
+          echo "Esperando a que la aplicación esté lista..."
           for i in {1..10}; do
             curl -s -f http://localhost:8098/actuator/health && break || echo "Esperando inicio de la API ($i/10)..."
             sleep 3
           done
 
       - name: Detener y Limpiar Contenedores
+        if: always()
+        run: docker compose down -v
+
+  # ==========================================================
+  # JOB 4: DESPLIEGUE AUTOMÁTICO Y TRAZABILIDAD (Solo main/master)
+  # ==========================================================
+  deploy:
+    name: 🚀 Despliegue Automático
+    runs-on: ubuntu-latest
+    needs: [ security-analysis, docker-integration-test ]
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir Imagen Docker
+        run: |
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.IMAGE_NAME }}:latest \
+            .
+
+      - name: Desplegar con Docker Compose
+        run: docker compose up -d
+
+      - name: Verificar despliegue (Health Check)
+        run: |
+          echo "Verificando el estado del despliegue..."
+          for i in {1..10}; do
+            curl -s -f http://localhost:8098/actuator/health && break || echo "Esperando inicio del contenedor ($i/10)..."
+            sleep 3
+          done
+
+      - name: Probar endpoint de órdenes
+        run: curl --fail http://localhost:8098/api/orders
+
+      - name: Registrar trazabilidad del despliegue
+        run: |
+          echo "================================"
+          echo "  DESPLIEGUE EXITOSO"
+          echo "================================"
+          echo "Commit SHA:   ${{ github.sha }}"
+          echo "Autor:        ${{ github.actor }}"
+          echo "Repositorio:  ${{ github.repository }}"
+          echo "Rama:         ${{ github.ref_name }}"
+          echo "Workflow:     ${{ github.workflow }}"
+          echo "Run ID:       ${{ github.run_id }}"
+          echo "Fecha:        $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "================================"
+
+      - name: Limpieza final de contenedores
         if: always()
         run: docker compose down -v
