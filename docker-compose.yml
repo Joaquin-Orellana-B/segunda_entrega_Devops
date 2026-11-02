@@ -1,16 +1,11 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
-    container_name: order-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-orderdb}
-      POSTGRES_USER: ${POSTGRES_USER:?Define POSTGRES_USER in .env or the environment}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD in .env or the environment}
-    ports:
-      - "127.0.0.1:5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +19,6 @@ services:
   app:
     build: .
     image: "${IMAGE_REPOSITORY:-order-manager}:${IMAGE_TAG:-latest}"
-    container_name: segunda_entrega_devops-app-1
     restart: unless-stopped
     ports:
       - "8098:8098"
