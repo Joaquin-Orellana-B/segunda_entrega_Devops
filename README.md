@@ -198,6 +198,14 @@ El job `deploy` valida la imagen y la aplicación dentro del runner temporal de 
 
 El permiso `packages: write` habilita potencialmente la publicación de paquetes, pero no publica una imagen por sí solo. La publicación y el despliegue a un entorno persistente requieren pasos y configuración adicionales.
 
+### Trivy permite analizar imágenes de contenedores en busca de vulnerabilidades en paquetes del sistema operativo y dependencias incluidas. El equipo informa que el análisis se ejecuta correctamente. Se utilizó para escanear la imagen Docker del proyecto en busca de vulnerabilidades en sus componentes. 
+
+### SonarCloud analiza el código y puede incorporar el reporte de cobertura JaCoCo para evaluar su calidad. SonarCloud no ejecuta las pruebas ni garantiza por sí solo que la aplicación funcione correctamente en tiempo de ejecución. También analiza el código e incorpora el reporte JaCoCo para mostrar métricas de calidad y cobertura. El parámetro sonar.qualitygate.wait=true hace que el job espere el resultado del Quality Gate.
+
+
+
+
+
 ## Endpoints de la API REST
 
 | Método | Endpoint | Descripción | Estado HTTP Esperado |
