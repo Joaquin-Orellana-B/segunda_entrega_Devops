@@ -158,25 +158,40 @@ El proyecto cuenta con el plugin de **JaCoCo** configurado para auditar la cober
 
 docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-17 mvn clean verify
 
-## Pipeline CI/CD y Trazabilidad
+## Pipeline CI/CD y trazabilidad
 
-El archivo .github/workflows/ci-cd.yml define dos jobs automatizados en GitHub Actions:
+El workflow [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) automatiza las validaciones del proyecto en GitHub Actions. Se ejecuta ante `push` y `pull_request` dirigidos a las ramas configuradas (`main`, `master` y ramas de desarrollo indicadas en el workflow).
 
-test-and-build:
+### Jobs implementados
 
-Descarga el código y configura JDK 17 Temurin.
+1. **`test-and-build` — pruebas y cobertura**
+   - Configura Java 17 Temurin y la caché de Maven.
+   - Ejecuta `mvn clean verify`.
+   - Publica como artefactos los reportes de pruebas Surefire y cobertura JaCoCo, con retención de siete días.
 
-Ejecuta mvn clean verify (compila y corre los 28 tests).
+2. **`security-analysis` — análisis SonarCloud**
+   - Se ejecuta después de que finaliza correctamente `test-and-build`.
+   - Configura Java 21 y ejecuta el análisis de SonarCloud con espera del Quality Gate.
+   - Si `SONAR_TOKEN` no está configurado, el análisis se omite y el job termina correctamente. Para ejecutarlo se deben configurar también la clave del proyecto y la organización mediante variables o secretos del repositorio.
 
-Genera y almacena los reportes de prueba como artefacto.
+3. **`docker-integration-test` — integración con Docker Compose**
+   - Se ejecuta después de que las pruebas pasan.
+   - Construye y levanta los servicios con `docker compose up -d --build`.
+   - Comprueba el endpoint `http://localhost:8098/actuator/health`.
+   - Al finalizar, incluso si ocurre un error, limpia los contenedores y volúmenes con `docker compose down -v`.
 
-docker-integration:
+4. **`deploy` — validación de despliegue y trazabilidad**
+   - Se ejecuta únicamente en eventos `push` a `main` o `master`, después de los jobs de análisis e integración Docker.
+   - Construye localmente la imagen con etiquetas correspondientes al SHA del commit y `latest`.
+   - Levanta los servicios con Docker Compose, verifica `/actuator/health` y prueba `GET /api/orders`.
+   - Registra en el log el SHA, actor, repositorio, rama, workflow, ID de ejecución y fecha.
+   - Limpia los contenedores y volúmenes al terminar.
 
-Se ejecuta únicamente si los tests pasaron exitosamente (needs: test-and-build).
+### Alcance actual del despliegue
 
-Construye la imagen Docker y levanta el entorno con docker compose up -d.
+El job `deploy` valida la imagen y la aplicación dentro del runner temporal de GitHub Actions. Aunque la imagen se etiqueta con el SHA del commit, **no se publica en GitHub Container Registry (GHCR)**: el job no inicia sesión en GHCR ni ejecuta una acción de publicación. Tampoco despliega en un servidor persistente; los contenedores se eliminan al final de la ejecución. Por lo tanto, la trazabilidad disponible actualmente corresponde al log del workflow y no verifica de forma independiente el SHA que ejecuta un entorno productivo.
 
-Realiza un health check llamando a http://localhost:8098/actuator/health hasta confirmar respuesta HTTP 200 OK.
+El permiso `packages: write` habilita potencialmente la publicación de paquetes, pero no publica una imagen por sí solo. La publicación y el despliegue a un entorno persistente requieren pasos y configuración adicionales.
 
 ## Endpoints de la API REST
 
