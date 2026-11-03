@@ -2,9 +2,9 @@ name: CI/CD Pipeline - Order Manager
 
 on:
   push:
-    branches: [ "main", "master", "develop/**", "develop-vc-2", "pre-merge","pre-merge-2" ]
+    branches: [ "main", "master", "develop/**", "develop-vc-2" ]
   pull_request:
-    branches: [ "main", "master", "develop/**", "develop-vc-2", "pre-merge","pre-merge-2" ]
+    branches: [ "main", "master", "develop/**", "develop-vc-2" ]
 
 env:
   JAVA_VERSION: '17'
@@ -12,7 +12,7 @@ env:
 
 permissions:
   contents: read
-  packages: write # Requerido para publicar en GHCR
+  packages: write # Requerido para publicar imágenes en GHCR
 
 jobs:
   # ==========================================================
@@ -92,7 +92,7 @@ jobs:
             -Dsonar.qualitygate.wait=true
 
   # ==========================================================
-  # JOB 3: PRUEBA DE INTEGRACIÓN DOCKER (Inyectando variables)
+  # JOB 3: PRUEBA DE INTEGRACIÓN DOCKER (Para PRs y ramas secundarias)
   # ==========================================================
   docker-integration-test:
     name: 🐳 Test de Integración Docker
@@ -128,11 +128,11 @@ jobs:
         if: always()
         run: docker compose down -v
 
- # ==========================================================
-  # JOB 4: PUBLICACIÓN EN GHCR Y DESPLIEGUE (Solo main/master)
+  # ==========================================================
+  # JOB 4: PUBLICACIÓN EN GHCR, ESCANEO Y DESPLIEGUE (Solo main/master)
   # ==========================================================
   deploy:
-    name: 🚀 Publicación GHCR y Despliegue
+    name: 🚀 Publicación GHCR, Escaneo y Despliegue
     runs-on: ubuntu-latest
     needs: [ security-analysis, docker-integration-test ]
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
@@ -145,7 +145,6 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # 🔧 PASO NUEVO: Convierte el repositorio a minúsculas para cumplir con la regla de Docker
       - name: Convertir nombre de repositorio a minúsculas
         run: |
           echo "REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -157,7 +156,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generar metadatos y etiquetas (Commit SHA)
+      - name: Generar metadatos y etiquetas (Commit SHA y Latest)
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -174,6 +173,14 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Escanear imagen publicada con Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/${{ env.REPO_LOWER }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
 
       - name: Probar despliegue con la imagen publicada
         env:
@@ -201,7 +208,7 @@ jobs:
           echo "* **Autor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "* **Imagen Trazable Publicada en GHCR:**" >> $GITHUB_STEP_SUMMARY
           echo "\`ghcr.io/${{ env.REPO_LOWER }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Estado:** Imagen construida, publicada en GHCR y desplegada exitosamente." >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Estado:** Imagen construida, escaneada por Trivy y desplegada exitosamente." >> $GITHUB_STEP_SUMMARY
 
       - name: Limpieza final
         if: always()
