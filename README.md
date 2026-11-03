@@ -37,18 +37,23 @@ El proyecto aborda la automatización completa del ciclo de vida de software: de
 ```text
 segunda_entrega_Devops/
 ├── .github/
-│   ├── workflows/ci-cd.yml         # Pipeline de Integración Continua
-│   └── dependabot.yml              # Escaneo semanal de dependencias
-├── docs/fases/                     # Bitácora detallada de las 10 fases
+│   ├── workflows/ci-cd.yml         # Pipeline CI/CD (Tests, SonarCloud, GHCR, Trivy y Deploy)
+│   └── dependabot.yml              # Escaneo y actualización semanal de dependencias
+├── .sonar/                         # Archivos temporales y caché de análisis de SonarCloud
+├── docs/fases/                     # Bitácora detallada de las 10 fases DevOps
 ├── src/
-│   ├── main/java/com/example/ordermanager/
-│   └── main/resources/
-│       ├── application.properties         # Configuración Local (H2)
-│       └── application-docker.properties  # Configuración Docker (PostgreSQL)
-├── Dockerfile                      # Empaquetado Multi-stage
-├── docker-compose.yml              # Orquestación App + DB
-├── .dockerignore                   # Exclusión de archivos pesados
-└── pom.xml                         # Gestión de dependencias y plugins
+│   └── main/
+│       ├── java/com/example/ordermanager/  # Código fuente de la aplicación Java / Spring Boot
+│       └── resources/
+│           ├── application.properties      # Configuración local (Base de datos H2)
+│           └── application-docker.properties # Configuración Docker (Base de datos PostgreSQL)
+├── .dockerignore                   # Exclusión de archivos pesados/sensibles en la compilación Docker
+├── .gitignore                      # Exclusión de archivos rastreados por Git (target, IDEs, etc.)
+├── Dockerfile                      # Empaquetado Multi-stage de la aplicación
+├── README.md                       # Documentación principal del proyecto
+├── docker-compose.yml              # Orquestación de servicios (App Spring Boot + PostgreSQL)
+├── pom.xml                         # Gestión de dependencias Maven, plugins y coberturas (JaCoCo)
+└── sonar-project.properties        # Configuración y parámetros del análisis de código en SonarCloud
 ```
 
 ### Estrategia de Ramificación (Git Branching)
