@@ -150,7 +150,7 @@ La suite consta de **28 pruebas automatizadas** que garantizan la estabilidad de
 ### 📊 Cobertura de Código (JaCoCo)
 El proyecto cuenta con el plugin de **JaCoCo** configurado para auditar la cobertura de las pruebas:
 * **Capa de Servicios (`service`):** **91%** de cobertura en la lógica de negocio central.
-* **Cobertura Global:** **63%** de cobertura total del proyecto.
+* **Cobertura Global:** **86%** de cobertura total del proyecto.
 
 ### 🚀 Ejecución de Tests y Generación del Reporte
 
