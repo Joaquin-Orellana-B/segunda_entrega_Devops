@@ -200,7 +200,7 @@ El permiso `packages: write` habilita potencialmente la publicación de paquetes
 
 ### Trivy permite analizar imágenes de contenedores en busca de vulnerabilidades en paquetes del sistema operativo y dependencias incluidas. El equipo informa que el análisis se ejecuta correctamente. Se utilizó para escanear la imagen Docker del proyecto en busca de vulnerabilidades en sus componentes. 
 
-### SonarCloud analiza el código y puede incorporar el reporte de cobertura JaCoCo para evaluar su calidad. SonarCloud no ejecuta las pruebas ni garantiza por sí solo que la aplicación funcione correctamente en tiempo de ejecución. También analiza el código e incorpora el reporte JaCoCo para mostrar métricas de calidad y cobertura. El parámetro sonar.qualitygate.wait=true hace que el job espere el resultado del Quality Gate.
+### SonarCloud analiza el código e incorpora el reporte de cobertura JaCoCo para evaluar su calidad. SonarCloud no ejecuta las pruebas ni garantiza por sí solo que la aplicación funcione correctamente en tiempo de ejecución. También analiza el código e incorpora el reporte JaCoCo para mostrar métricas de calidad y cobertura. El parámetro sonar.qualitygate.wait=true hace que el job espere el resultado del Quality Gate.
 
 
 
