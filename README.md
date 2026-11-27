@@ -18,16 +18,21 @@ El proyecto aborda la automatización completa del ciclo de vida de software: de
 
 ## 🛠️ Stack Tecnológico y Arquitectura
 
-- **Lenguaje & Framework**: Java 17, Spring Boot 3.3.4 (Data JPA, Web, Validation, Actuator).
-- **Bases de Datos**: H2 Database (desarrollo local/tests) y PostgreSQL 15 Alpine (producción/contenedores).
-- **Contenerización**: Docker (Multi-stage build).
-- **Orquestación**: Docker Compose (Servicios `db` y `app` con `healthcheck`).
-- **CI/CD**: GitHub Actions y Dependabot.
+- **Lenguaje & Framework**: Java 17, Spring Boot 3.5.0 / 4.0.5 (Data JPA, Web, Validation, Actuator, Micrometer Prometheus).
+- **Bases de Datos**: H2 Database (desarrollo local y pruebas automatizadas) y PostgreSQL 15 Alpine (entornos de contenedores y producción en EKS).
+- **Contenerización y Registro**: Docker (Multi-stage build sobre Alpine) y GitHub Container Registry (`ghcr.io`).
+- **Orquestación y Service Mesh**:
+  - **Producción / Nube**: Kubernetes administrado en **Amazon EKS (`cluster-istio`)** con **Istio Service Mesh** (`Gateway`, `VirtualService` y inyección automática de sidecars Envoy).
+  - **Desarrollo / Pruebas de Integración**: Docker Compose (servicios `db` y `app` con `healthcheck`).
+- **Observabilidad y Monitoreo**: Spring Boot Actuator, Micrometer Prometheus y **Kiali** (visualización de topología, métricas y tráfico en la malla de servicios Istio).
+- **CI/CD y DevSecOps**: GitHub Actions, Dependabot, **JaCoCo** (cobertura $\ge 70\%$), **SonarCloud** (SAST y Quality Gate) y **Trivy** (escaneo de vulnerabilidades en imágenes de contenedores).
 
 ```text
-[ Cliente / Postman ] ──> [ Spring Boot API (Port 8098) ] ──> [ PostgreSQL (Port 5432) ]
-                                     │
-                          [ Actuator Health Check ]
+[ Cliente / Postman ] ──> [ AWS LoadBalancer ] ──> [ Istio Gateway / VirtualService ]
+                                                                │
+                           ┌────────────────────────────────────┴────────────────────────────────────┐
+                           ▼                                                                         ▼
+            [ Pod: Order Manager API (:8098) + Envoy ] ──> [ PostgreSQL (:5432) ]     [ Kiali / Prometheus (Observabilidad) ]
 ```
 
 
@@ -147,60 +152,59 @@ docker compose down -v
 
 ## Pruebas Automatizadas y Cobertura
 
-La suite consta de **28 pruebas automatizadas** que garantizan la estabilidad del sistema:
+La suite consta de **28 pruebas automatizadas** que garantizan la estabilidad del sistema y se ejecutan automáticamente en cada `push` y `pull_request` dentro del job `test-and-build`:
 
-* **Pruebas Unitarias (`OrderServiceTest`):** 15 pruebas de lógica de negocio y manejo de excepciones utilizando Mockito.
-* **Pruebas de Integración Web (`OrderControllerTest`):** 13 pruebas de endpoints HTTP y mapeo JSON con MockMvc.
+- **Pruebas Unitarias (`OrderServiceTest`):** 15 pruebas de lógica de negocio, transiciones de estado y manejo de excepciones utilizando **Mockito**.
+- **Pruebas de Integración Web (`OrderControllerTest`):** 13 pruebas de endpoints HTTP, validaciones de entrada y mapeo JSON utilizando **MockMvc**.
 
-### 📊 Cobertura de Código (JaCoCo)
-El proyecto cuenta con el plugin de **JaCoCo** configurado para auditar la cobertura de las pruebas:
-* **Capa de Servicios (`service`):** **91%** de cobertura en la lógica de negocio central.
-* **Cobertura Global:** **86%** de cobertura total del proyecto.
+### 📊 Cobertura de Código y Quality Gate (JaCoCo)
+El proyecto integra el plugin **JaCoCo (`0.8.11`)** con verificación automática (`jacoco:check`) que **bloquea la compilación si la cobertura de líneas es inferior al 70%**, excluyendo clases de modelo, DTOs, excepciones y la clase principal (`OrderManagerApplication`):
+- **Capa de Servicios (`service`):** **91%** de cobertura en la lógica de negocio central.
+- **Cobertura Global:** **86%** de cobertura total del proyecto (superando el umbral mínimo exigido del 70%).
+- **Reportes generados:** El reporte visual en HTML se genera en `target/site/jacoco/index.html` y el reporte XML en `target/site/jacoco/jacoco.xml` para su ingesta en **SonarCloud**.
 
 ### 🚀 Ejecución de Tests y Generación del Reporte
 
-**Opción 1: Mediante Docker **
+**Opción 1: Mediante Docker (sin instalar Java ni Maven localmente)**
 
-docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-17 mvn clean verify
+```bash docker run --rm -v "${PWD}:/app" -w /app maven:3.9-eclipse-temurin-17 mvn clean verify ```
 
 ## Pipeline CI/CD y trazabilidad
 
-El workflow [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) automatiza las validaciones del proyecto en GitHub Actions. Se ejecuta ante `push` y `pull_request` dirigidos a las ramas configuradas (`main`, `master` y ramas de desarrollo indicadas en el workflow).
+El workflow [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) automatiza las validaciones de calidad, seguridad, construcción y publicación del proyecto en GitHub Actions. Se ejecuta ante eventos `push` y `pull_request` dirigidos a las ramas configuradas (`main`, `master` y ramas de desarrollo).
 
 ### Jobs implementados
 
-1. **`test-and-build` — pruebas y cobertura**
+1. **`test-and-build` – pruebas y cobertura**
    - Configura Java 17 Temurin y la caché de Maven.
-   - Ejecuta `mvn clean verify`.
+   - Ejecuta `mvn clean verify` para compilar, correr pruebas unitarias y validar el umbral mínimo de cobertura del 70% mediante JaCoCo.
    - Publica como artefactos los reportes de pruebas Surefire y cobertura JaCoCo, con retención de siete días.
 
-2. **`security-analysis` — análisis SonarCloud**
+2. **`security-analysis` – análisis estático con SonarCloud**
    - Se ejecuta después de que finaliza correctamente `test-and-build`.
-   - Configura Java 21 y ejecuta el análisis de SonarCloud con espera del Quality Gate.
-   - Si `SONAR_TOKEN` no está configurado, el análisis se omite y el job termina correctamente. Para ejecutarlo se deben configurar también la clave del proyecto y la organización mediante variables o secretos del repositorio.
+   - Configura Java 21 y ejecuta el análisis estático (SAST) en SonarCloud verificando el cumplimiento del Quality Gate.
+   - Si `SONAR_TOKEN` no está configurado, el análisis se omite y el job finaliza correctamente; para activarlo se utilizan los secretos y variables configurados en el repositorio.
 
-3. **`docker-integration-test` — integración con Docker Compose**
-   - Se ejecuta después de que las pruebas pasan.
-   - Construye y levanta los servicios con `docker compose up -d --build`.
-   - Comprueba el endpoint `http://localhost:8098/actuator/health`.
+3. **`docker-integration-test` – integración con Docker Compose**
+   - Se ejecuta después de que las pruebas unitarias pasan.
+   - Construye y levanta los servicios (`order-manager` y base de datos) mediante `docker compose up -d --build`.
+   - Comprueba la disponibilidad de la aplicación consultando el endpoint `http://localhost:8098/actuator/health`.
    - Al finalizar, incluso si ocurre un error, limpia los contenedores y volúmenes con `docker compose down -v`.
 
-4. **`deploy` — validación de despliegue y trazabilidad**
-   - Se ejecuta únicamente en eventos `push` a `main` o `master`, después de los jobs de análisis e integración Docker.
-   - Construye localmente la imagen con etiquetas correspondientes al SHA del commit y `latest`.
-   - Levanta los servicios con Docker Compose, verifica `/actuator/health` y prueba `GET /api/orders`.
-   - Registra en el log el SHA, actor, repositorio, rama, workflow, ID de ejecución y fecha.
-   - Limpia los contenedores y volúmenes al terminar.
+4. **`build-and-scan` / `deploy` – publicación en GHCR, escaneo con Trivy y trazabilidad**
+   - Se ejecuta en eventos `push` hacia la rama principal tras superar las etapas de calidad e integración.
+   - Construye la imagen Docker optimizada (multi-stage sobre Alpine) y la publica en **GitHub Container Registry (`ghcr.io`)** etiquetada con el SHA del commit (`ghcr.io/<usuario>/segunda_entrega_devops:<sha>`) y    `latest`.
+   - Ejecuta **Trivy (`aquasecurity/trivy-action`)** sobre la imagen publicada en `ghcr.io` para auditar vulnerabilidades (`CRITICAL` y `HIGH`) tanto en las capas del sistema operativo base como en las dependencias Java (`app/app.jar`).
+   - Registra en el log del workflow la trazabilidad completa de la ejecución (SHA del commit, actor, repositorio, rama, workflow, ID de ejecución y fecha) dejando la imagen lista para su despliegue en el clúster **Amazon EKS (`cluster-istio`)** con **Istio Service Mesh**.
 
-### Alcance actual del despliegue
+### Alcance actual del despliegue y herramientas de aseguramiento
 
-El job `deploy` valida la imagen y la aplicación dentro del runner temporal de GitHub Actions. Aunque la imagen se etiqueta con el SHA del commit, **no se publica en GitHub Container Registry (GHCR)**: el job no inicia sesión en GHCR ni ejecuta una acción de publicación. Tampoco despliega en un servidor persistente; los contenedores se eliminan al final de la ejecución. Por lo tanto, la trazabilidad disponible actualmente corresponde al log del workflow y no verifica de forma independiente el SHA que ejecuta un entorno productivo.
+El flujo de entrega evolucionó desde una validación efímera en el runner hacia un pipeline DevSecOps completo con artefactos versionados y despliegue persistente en la nube:
 
-El permiso `packages: write` habilita potencialmente la publicación de paquetes, pero no publica una imagen por sí solo. La publicación y el despliegue a un entorno persistente requieren pasos y configuración adicionales.
-
-### Trivy permite analizar imágenes de contenedores en busca de vulnerabilidades en paquetes del sistema operativo y dependencias incluidas. El equipo informa que el análisis se ejecuta correctamente. Se utilizó para escanear la imagen Docker del proyecto en busca de vulnerabilidades en sus componentes. 
-
-### SonarCloud analiza el código e incorpora el reporte de cobertura JaCoCo para evaluar su calidad. SonarCloud no ejecuta las pruebas ni garantiza por sí solo que la aplicación funcione correctamente en tiempo de ejecución. También analiza el código e incorpora el reporte JaCoCo para mostrar métricas de calidad y cobertura. El parámetro sonar.qualitygate.wait=true hace que el job espere el resultado del Quality Gate.
+- **Publicación en GHCR y trazabilidad de artefactos:** El pipeline inicia sesión en **GitHub Container Registry (`ghcr.io`)** haciendo uso del permiso `packages: write` y publica la imagen oficial del microservicio etiquetada con el SHA exacto del commit (`ghcr.io/joaquin-orellana-b/segunda_entrega_devops:<sha>`). Esto garantiza trazabilidad inmutable entre el código fuente aprobado en GitHub, el artefacto almacenado en el registro y la versión ejecutada en producción.
+- **Despliegue persistente en Amazon EKS e Istio:** A diferencia de las pruebas efímeras en contenedores locales, el entorno productivo opera de forma persistente sobre un clúster administrado en **AWS EKS (`cluster-istio`)**. El microservicio `order-manager` y su base de datos **PostgreSQL** se orquestan mediante manifiestos declarativos de Kubernetes bajo la malla de servicios **Istio Service Mesh** (`istio-injection=enabled`), gestionando el tráfico entrante a través de `Gateway` y `VirtualService` expuestos mediante un AWS LoadBalancer, con observabilidad en tiempo real en **Kiali**.
+- **Auditoría de seguridad con Trivy:** Integrado directamente en el workflow de GitHub Actions (`aquasecurity/trivy-action`), Trivy analiza la imagen publicada en `ghcr.io` inspeccionando tanto las capas del sistema operativo base (`Alpine`) como las dependencias Java empaquetadas (`app/app.jar`) en busca de vulnerabilidades `HIGH` y `CRITICAL`.
+- **Calidad estática y cobertura con SonarCloud y JaCoCo:** Durante la fase de construcción (`mvn clean verify`), **JaCoCo** instrumenta el código y exige un umbral mínimo de cobertura de líneas del **70%**, generando el reporte XML que posteriormente consume **SonarCloud**. El parámetro `sonar.qualitygate.wait=true` obliga al pipeline a esperar el veredicto del Quality Gate antes de permitir la publicación de la imagen hacia GHCR.
 
 
 
