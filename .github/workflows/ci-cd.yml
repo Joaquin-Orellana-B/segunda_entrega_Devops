@@ -80,16 +80,13 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "⚠️ SONAR_TOKEN no está configurado. Omitiendo análisis de SonarCloud."
-            exit 0
-          fi
-
+          # [IE5 & IE6] Se elimina el 'exit 0' cuando falta SONAR_TOKEN para evitar que el pipeline
+          # omita el análisis silenciosamente y obligar el cumplimiento del Quality Gate.
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION || secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.wait=true # [IE6] Detiene el pipeline si no cumple calidad/cobertura
 
   # ==========================================================
   # JOB 3: PRUEBA DE INTEGRACIÓN DOCKER (Para PRs y ramas secundarias)
@@ -174,13 +171,19 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      #-  ... (dentro de JOB 4: deploy, reemplaza el paso de Trivy por este) ...
+
       - name: Escanear imagen publicada con Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'ghcr.io/${{ env.REPO_LOWER }}:${{ github.sha }}'
           format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          # [IE6] Cambiado de '0' a '1': obliga a que el pipeline falle y se detenga
+          # si detecta vulnerabilidades críticas antes de pasar al despliegue.
+          exit-code: '1'
+          # [IE5 & IE6] Política de seguridad: solo bloquea ante vulnerabilidades CRITICAL
+          # para evitar falsos positivos menores en paquetes base de Alpine/Linux.
+          severity: 'CRITICAL'
 
       - name: Probar despliegue con la imagen publicada
         env:
